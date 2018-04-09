@@ -170,8 +170,7 @@ class DataLoader:
         """
         with open(self.filename, 'r') as dataset:
             epoch = 0
-            line = None
-            while epoch < num_epochs or line:
+            while epoch < num_epochs:
                 batch = []
                 for k in range(batch_size):
                     line = dataset.readline()
