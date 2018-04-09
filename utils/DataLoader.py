@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import pickle
 from os import path, getcwd
 
 
@@ -10,38 +11,24 @@ class DataLoader:
     Preprocessing appens in the `preprocess_data` method.
     """
 
-    def __init__(self, vocab_size=None, max_size=30, tokenizer=None,
-                 transform=None):
+    def __init__(self, filename, vocab_size=None, max_size=30, transform=None):
         """
-        :param filename: path of file. If None, will ask to upload a text file.
-        :param tokenizer: function to tokenize the sentences. If None, a default
-          tokenizer by the space ` ` caracter will be used.
-        :param max_size: maximum size of the sentence. All sentences that are longer
-          than max_size will be discarded.
+        :param filename: path of file.
         :param vocab_size: Size of the vocab we will use (if default, the vocab will be
           all the words of the dataset)
+        :param max_size: maximum size of the sentence. All sentences that are longer
+          than max_size will be discarded.
         :param transform: some additional transformation(s) to apply to the dataset.
           This can be a callable or a list of collable.
         """
+        self.filename = path.abspath(path.join(getcwd(), filename))
         self.dataset = None
         self.indices = None
         self.max_size = max_size
         self.vocab_size = vocab_size
         self.vocab = None
         self.transform = transform
-
-        if tokenizer is None:
-            self.tokenizer = DataLoader.default_tokenizer
-        else:
-            self.tokenizer = tokenizer
-
-    @staticmethod
-    def default_tokenizer(sentence):
-        """
-        Default tokenizer. Split the sentence by the space.
-        :param sentence:
-        """
-        return sentence.split(' ')
+        self.tokenizer = lambda x: x.split(' ')
 
     def pad_sentence(self, words):
         """
@@ -61,18 +48,7 @@ class DataLoader:
         vocab = self.get_vocab()
         return list(map(lambda word: word if word in vocab else '<unk>', words))
 
-    def import_file(self, filename):
-        """
-        Import a file
-        """
-        dataset_path = path.abspath(path.join(getcwd(), filename))
-        # function to remove \n character
-        remove_return_character = lambda s: s.replace('\n', '')
-        with open(dataset_path, 'r') as f:
-            self.dataset = list(map(remove_return_character, f.readlines()))
-        return self.preprocess_dataset()
-
-    def preprocess_dataset(self):
+    def preprocess_dataset(self, batch):
         """
         Preprocess the dataset.
 
@@ -82,58 +58,70 @@ class DataLoader:
         * Set the <unk> token for unknown words
         """
         # Tokenize the dataset
-        self.dataset = list(map(self.tokenizer, self.dataset))
+        dataset = list(map(self.tokenizer, batch))
         # Remove sentences that are too long.
         # We use self.max_size -2 for <bos> and <eos>
-        self.dataset = list(filter(lambda s: len(s) <= (self.max_size - 2),
-                                   self.dataset))
+        dataset = list(filter(lambda s: len(s) <= (self.max_size - 2),
+                                   dataset))
         # Set the <unk> words
-        self.dataset = list(map(self.set_unk_token, self.dataset))
+        dataset = list(map(self.set_unk_token, dataset))
         # Pad the sentences and add <bos> and <eos>
-        self.dataset = list(map(self.pad_sentence, self.dataset))
+        dataset = list(map(self.pad_sentence, dataset))
         # Apply transforms
         if self.transform is not None:
             if type(self.transform) == list:
                 for transform in self.transform:
-                    self.dataset = transform(self.dataset)
+                    dataset = transform(dataset)
             else:
-                self.dataset = self.transform(self.dataset)
+                dataset = self.transform(dataset)
 
         # indices of the dataset
-        self.indices = list(range(len(self.dataset)))
-        self.dataset = np.array(self.dataset)
-        np.random.shuffle(self.indices)
+        # self.indices = list(range(len(self.dataset)))
+        return np.array(dataset)
 
-        return self  # For method chaining
-
-    def get_dataset(self, tf_dataset=False):
-        """
-        Dataset getter
-        :param tf_dataset: if True, will give the tf dataset. Otherwise list dataset.
-        """
-        return tf.data.Dataset.from_tensors(self.dataset) if tf_dataset else self.dataset
-
-    def get_vocab(self):
+    def get_vocab(self, file=None):
         """
         Get vocab of the dataset.
+        :param file: file of the vocab pickled file
         """
-        # To be quicker if we have to get the vocab several times
         if self.vocab is not None:
             return self.vocab
-        # vocab is a dict where the key is a word and the value the number of ...
-        # appearance of the word
+        if file is None:
+            file = 'vocab.dat'
+        file = path.abspath(path.join(getcwd(), file))
+        with open(file, 'rb') as file:
+            self.vocab = pickle.load(file)
+        return self.vocab
+
+    def compute_vocab(self, vocab_size=20000, savefile=None):
+        """
+        Compute the vocabulary from the dataset filename
+        :param vocab_size: size of the vocab
+        :param savefile: to save the file in a file
+        :return: vocab
+        """
+        filepath = path.abspath(path.join(getcwd(), self.filename))
         vocab = {}
-        for sentence in self.dataset:
-            for word in sentence:
-                vocab[word] = vocab[word] + 1 if word in vocab.keys() else 1
-        # Sort vocab by number of appearance then get the voc
+        with open(filepath, 'r') as file:
+            line = file.readline()
+            while line:
+                words = line.split(' ')
+                for word in words:
+                    # Gets rid of the \n symbol
+                    if word[-1:] == '\n':
+                        word = word[:-1]
+                    if word not in vocab.keys():
+                        vocab[word] = 1
+                    else:
+                        vocab[word] += 1
+                line = file.readline()
         vocab_ordered = list(zip(*sorted(vocab.items(), key=lambda t: t[1],
                                          reverse=True)))
-        vocab_ordered = vocab_ordered[0]  # Keep only the words
-        if self.vocab_size is None:
-            self.vocab = vocab_ordered
-        else:
-            self.vocab = vocab_ordered[:self.vocab_size]
+        self.vocab = vocab_ordered[0]  # Keep only the words
+        self.vocab = self.vocab[:vocab_size]
+        if savefile is not None:
+            with open('vocab.dat', 'wb') as file:
+                pickle.dump(self.vocab, file)
         return self.vocab
 
     def get_word_to_index(self, pad_index=0, bos_index=1, eos_index=2, unk_index=3):
@@ -174,19 +162,24 @@ class DataLoader:
         self.dataset = list(map(transform, self.dataset))
         return self
 
-    def regenerate_indices(self):
-        """
-        Rebuilds the list of shuffled dataset indices for random batching
-        """
-        self.indices = list(range(len(self.dataset)))
-        np.random.shuffle(self.indices)
-
-    def get_batch(self, batch_size):
+    def get_batches(self, batch_size, num_epochs):
         """
         Get a batch of random elements
+        :param batch_size:
+        :param num_epochs:
         """
-        # If there is not enough elements, restart from scratch
-        if len(self.indices) < batch_size:
-            self.regenerate_incices()
-        return np.array([self.dataset[self.indices.pop()] for k in range(batch_size)])
-
+        with open(self.filename, 'r') as dataset:
+            epoch = 0
+            line = None
+            while epoch < num_epochs or line:
+                batch = []
+                for k in range(batch_size):
+                    line = dataset.readline()
+                    if not line:  # If no more line, we go back to the beginning
+                        dataset.seek(0)
+                        epoch += 1
+                        line = dataset.readline()
+                    # Remove \n symbol
+                    line = line.replace('\n', '')
+                    batch.append(line)
+                yield self.preprocess_dataset(batch)

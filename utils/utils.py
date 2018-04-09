@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def word_to_index_transform(word_to_index, data):
     """
     Get a batch of sequences and transform the words into indices
