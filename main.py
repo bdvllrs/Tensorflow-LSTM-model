@@ -58,12 +58,6 @@ output, softmax_output = lstm(x, label)
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
     optimizer = lstm.optimize(output, label, learning_rate)
 
-batches = dataloader_eval.get_batches(batch_size, 1)
-for batch in batches:
-    b = word_to_index_transform(word_to_index, batch)
-    print(b)
-    break
-
 """Now let's execute the graph in the session.
 
 We ge a data batch with `dataloader.get_batch(batch_size)`. This fetches a batch of word sequences.
@@ -87,8 +81,8 @@ with tf.Session() as sess:
         # Run the session
         _, logits, loss = sess.run([optimizer, softmax_output, lstm.loss], {x: batch_input, label: batch_target})
         
-        #logits batchsize*max_size*vocabulary
-         Y_pred_onehot = tf.argmax(logits, 2)
+        # logits batchsize*max_size*vocabulary
+        Y_pred_onehot = tf.argmax(logits, 2)
         
         sentences = index_to_word_transform(index_to_word, Y_pred_onehot)
         
