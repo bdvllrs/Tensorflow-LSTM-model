@@ -12,5 +12,5 @@ in the `dataset` folder.
 
 * numpy
 * tensorflow
-
+* pickle
 
