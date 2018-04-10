@@ -86,6 +86,12 @@ with tf.Session() as sess:
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         # Run the session
         _, logits, loss = sess.run([optimizer, softmax_output, lstm.loss], {x: batch_input, label: batch_target})
+        
+        #logits batchsize*max_size*vocabulary
+         Y_pred_onehot = tf.argmax(logits, 2)
+        
+        
+        
         # Output directory for models and summaries
         timestamp = str(int(time.time()))
         out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
