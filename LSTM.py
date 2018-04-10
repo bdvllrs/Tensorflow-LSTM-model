@@ -70,8 +70,9 @@ class LSTM:
         final_output = tf.transpose(final_output, [1, 0, 2])
         return final_output, tf.nn.softmax(final_output)
 
-    @staticmethod
-    def optimize(output, label, learning_rate):
+
+
+    def optimize(self,output, label, learning_rate):
         training_vars = tf.trainable_variables()
         # En fait je ne suis pas sur, j'ai l'impression que la fonction sparse_softmax_cross_entropy_with_logits calcul un softmax
         # vu son nom. En plus il prend les `logits`... donc effectivement, il ne faut pas faire de softmax avant...
@@ -80,7 +81,7 @@ class LSTM:
         # évalu... Si on évalu, il faudrait garde le premier softmax
         cross_entropy = tf.reduce_mean(
             tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label, logits=output))  # Deuxième...
-
+        self.loss=tf.reduce_mean(cross_entropy)
         grads, _ = tf.clip_by_global_norm(tf.gradients(cross_entropy, training_vars), 5)  # Max gradient of 5
 
         optimizer = tf.train.AdamOptimizer(learning_rate)
