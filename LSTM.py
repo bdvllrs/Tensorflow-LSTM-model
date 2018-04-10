@@ -11,6 +11,7 @@ class LSTM:
         self.hidden_size = hidden_size
         self.max_size = max_size
         self.teacher_forcing = teacher_forcing
+        self.loss = 0
 
     def __call__(self, x, label=None):
         assert self.teacher_forcing and label is not None, "Please provide the label to use teacher forcing."
@@ -70,16 +71,14 @@ class LSTM:
         final_output = tf.transpose(final_output, [1, 0, 2])
         return final_output, tf.nn.softmax(final_output)
 
-
-
-    def optimize(self,output, label, learning_rate):
+    def optimize(self, output, label, learning_rate):
         training_vars = tf.trainable_variables()
         cross_entropy = tf.reduce_mean(
             tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label, logits=output))  # Deuxième...
-        self.loss=tf.reduce_mean(cross_entropy)
+        self.loss = tf.reduce_mean(cross_entropy)
         grads, _ = tf.clip_by_global_norm(tf.gradients(cross_entropy, training_vars), 5)  # Max gradient of 5
 
         optimizer = tf.train.AdamOptimizer(learning_rate)
         optimizer.apply_gradients(zip(grads, training_vars))
 
-        return optimizer.minimize(cross_entropy)
+        return optimizer.minimize(cross_entropy), cross_entropy
