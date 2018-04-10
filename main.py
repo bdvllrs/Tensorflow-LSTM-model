@@ -6,7 +6,7 @@ By `Benjamin DEVILLERS`, `Adrien BENAMIRA` and `Esteban LANTER`
 """
 
 import tensorflow as tf
-from utils import DataLoader, word_to_index_transform
+from utils import DataLoader, word_to_index_transform, index_to_word_transform
 from LSTM import LSTM
 import time
 import os
@@ -90,7 +90,7 @@ with tf.Session() as sess:
         #logits batchsize*max_size*vocabulary
          Y_pred_onehot = tf.argmax(logits, 2)
         
-        
+        sentences = index_to_word_transform(index_to_word, Y_pred_onehot)
         
         # Output directory for models and summaries
         timestamp = str(int(time.time()))
