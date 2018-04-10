@@ -80,12 +80,12 @@ with tf.Session() as sess:
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         # Run the session
         _, logits, loss = sess.run([optimizer, softmax_output, lstm.loss], {x: batch_input, label: batch_target})
-        
+
         # logits batchsize*max_size*vocabulary
         Y_pred_onehot = tf.argmax(logits, 2)
         perplexity = tf.exp(loss)
         sentences = index_to_word_transform(index_to_word, Y_pred_onehot)
-        
+
         # Output directory for models and summaries
         timestamp = str(int(time.time()))
         out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
@@ -93,15 +93,15 @@ with tf.Session() as sess:
 
         # Summaries for loss and accuracy
         loss_summary = tf.summary.scalar("loss", lstm.loss)
-        # acc_summary = tf.summary.scalar("accuracy", lstm.accuracy)
+        perplexity_summary = tf.summary.scalar("accuracy", perplexity)
 
         # Train Summaries
-        train_summary_op = tf.summary.merge([loss_summary])
+        train_summary_op = tf.summary.merge([loss_summary,perplexity_summary])
         train_summary_dir = os.path.join(out_dir, "summaries", "train")
         train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)
 
         # Dev summaries
-        dev_summary_op = tf.summary.merge([loss_summary])
+        dev_summary_op = tf.summary.merge([loss_summary,perplexity_summary])
         dev_summary_dir = os.path.join(out_dir, "summaries", "dev")
         dev_summary_writer = tf.summary.FileWriter(dev_summary_dir, sess.graph)
 
