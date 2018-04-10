@@ -25,6 +25,7 @@ eos_index = 2
 unk_index = 3
 num_checkpoints = 5
 print_every = 100
+num_epochs = 1  # TO CHANGE
 
 learning_rate = 0.01
 
@@ -73,7 +74,7 @@ assign the `max_size - 1` last tokens into the target sequences.
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     # Get a batch with the dataloader and transfrom it into tokens
-    batches = dataloader_eval.get_batches(batch_size, num_epochs=1)
+    batches = dataloader_eval.get_batches(batch_size, num_epochs=num_epochs)
     for num_batch, batch in enumerate(batches):
         batch = word_to_index_transform(word_to_index, batch)
         # Defining input and target sequences

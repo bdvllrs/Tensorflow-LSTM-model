@@ -1,5 +1,5 @@
 dataset/
 .idea/
-vocab.dat
 runs/
+*cache*
 
