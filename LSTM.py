@@ -73,11 +73,6 @@ class LSTM:
     @staticmethod
     def optimize(output, label, learning_rate):
         training_vars = tf.trainable_variables()
-        # En fait je ne suis pas sur, j'ai l'impression que la fonction sparse_softmax_cross_entropy_with_logits calcul un softmax
-        # vu son nom. En plus il prend les `logits`... donc effectivement, il ne faut pas faire de softmax avant...
-        # Le problème c'est pour l'évaluation... Vu que cette fonction n'est utilisée que pour l'entraînement.
-        # Il faudrait donc vérifier en fonction de si `label is None` ou pas pour savoir si on entraîne ou si on
-        # évalu... Si on évalu, il faudrait garde le premier softmax
         cross_entropy = tf.reduce_mean(
             tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label, logits=output))  # Deuxième...
 

@@ -11,7 +11,6 @@ from LSTM import LSTM
 
 """### Some general settings"""
 
-
 max_size = 30  # Max size of the sentences, including  the <bos> and <eos> symbol
 vocab_size = 20000  # including symbols
 embedding_size = 100  # Size of the embeddig
@@ -40,7 +39,7 @@ Uncomment to generate the vocab.dat file"""
 
 # Get the word to index correspondance for the embedding.
 word_to_index, index_to_word = dataloader_train.get_word_to_index(pad_index, bos_index,
-                                                                 eos_index, unk_index)
+                                                                  eos_index, unk_index)
 print(word_to_index)
 print("The index of 'the' is:", word_to_index["the"])
 print("The word of index 100 is:", index_to_word[100])
