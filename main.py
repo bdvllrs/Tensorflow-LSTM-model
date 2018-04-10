@@ -56,7 +56,7 @@ label = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="label")
 output, softmax_output = lstm(x, label)
 
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
-    optimizer, cross_entropy = lstm.optimize(output, label, learning_rate)
+    optimizer = lstm.optimize(output, label, learning_rate)
 
 batches = dataloader_eval.get_batches(batch_size, 1)
 for batch in batches:
@@ -85,7 +85,7 @@ with tf.Session() as sess:
         # Defining input and target sequences
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         # Run the session
-        _, logits, loss = sess.run([optimizer, softmax_output, cross_entropy], {x: batch_input, label: batch_target})
+        _, logits, loss = sess.run([optimizer, softmax_output, lstm.loss], {x: batch_input, label: batch_target})
         # Output directory for models and summaries
         timestamp = str(int(time.time()))
         out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
