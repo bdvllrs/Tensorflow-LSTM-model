@@ -83,7 +83,7 @@ with tf.Session() as sess:
         
         # logits batchsize*max_size*vocabulary
         Y_pred_onehot = tf.argmax(logits, 2)
-        
+        perplexity = tf.exp(loss)
         sentences = index_to_word_transform(index_to_word, Y_pred_onehot)
         
         # Output directory for models and summaries
