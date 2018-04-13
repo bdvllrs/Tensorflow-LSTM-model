@@ -90,7 +90,7 @@ class DataLoader:
             file = 'vocab.dat'
         file = path.abspath(path.join(getcwd(), file))
         with open(file, 'rb') as file:
-            self.vocab = pickle.load(file)
+            self.vocab = pickle.load(file)[:self.vocab_size-4]  # Removing the 3 tokens in the size
         return self.vocab
 
     def compute_vocab(self, vocab_size=20000, savefile=None):
@@ -118,7 +118,7 @@ class DataLoader:
         vocab_ordered = list(zip(*sorted(vocab.items(), key=lambda t: t[1],
                                          reverse=True)))
         self.vocab = vocab_ordered[0]  # Keep only the words
-        self.vocab = self.vocab[:vocab_size]
+        self.vocab = self.vocab[:vocab_size-4]  # Remove the <bos>, <unk> and <eos> tokens
         if savefile is not None:
             with open('vocab.dat', 'wb') as file:
                 pickle.dump(self.vocab, file)
@@ -172,7 +172,7 @@ class DataLoader:
             epoch = 0
             while epoch < num_epochs:
                 batch = []
-                for k in range(batch_size):
+                while len(batch) < 64:
                     line = dataset.readline()
                     if not line:  # If no more line, we go back to the beginning
                         dataset.seek(0)
@@ -180,5 +180,6 @@ class DataLoader:
                         line = dataset.readline()
                     # Remove \n symbol
                     line = line.replace('\n', '')
-                    batch.append(line)
+                    if len(line) <= self.max_size:
+                        batch.append(line)
                 yield self.preprocess_dataset(batch)
