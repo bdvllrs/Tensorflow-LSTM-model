@@ -1,5 +1,11 @@
 import numpy as np
 import tensorflow as tf
+from time import gmtime, strftime
+
+
+def log_reset(logfile):
+    with open(logfile, 'w') as log:
+        log.write('')
 
 
 def log(*text, logfile=None, is_verbose=False):
@@ -13,7 +19,8 @@ def log(*text, logfile=None, is_verbose=False):
         print(*text)
     if logfile is not None:
         with open(logfile, 'a') as log:
-            log.write(' '.join(text) + '\n')
+            text = map(lambda x: str(x), text)
+            log.write(strftime("[%Y-%m-%d %H:%M:%S] ", gmtime()) + ' '.join(text) + '\n')
 
 
 def word_to_index_transform(word_to_index, data):

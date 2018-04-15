@@ -6,7 +6,7 @@ By `Benjamin DEVILLERS`, `Adrien BENAMIRA` and `Esteban LANTER`
 """
 
 import tensorflow as tf
-from utils import DataLoader, log, word_to_index_transform, index_to_word_transform, lstm, optimize
+from utils import DataLoader, log, log_reset, word_to_index_transform, index_to_word_transform, lstm, optimize
 # import numpy as np
 import time
 import os
@@ -47,6 +47,7 @@ is_verbose = args.verbose
 learning_rate = args.lr
 
 logpath = os.path.abspath(os.path.join(workdir, args.logfile))
+log_reset(logpath)
 
 # logpath = os.path.abspath(os.path.join(workdir, "runs"))
 # with subprocess.Popen(['tensorboard', '--logdir', logpath]):
