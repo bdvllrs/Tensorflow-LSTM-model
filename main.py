@@ -6,7 +6,7 @@ By `Benjamin DEVILLERS`, `Adrien BENAMIRA` and `Esteban LANTER`
 """
 
 import tensorflow as tf
-from utils import DataLoader, word_to_index_transform, index_to_word_transform, lstm, optimize
+from utils import DataLoader, log, word_to_index_transform, index_to_word_transform, lstm, optimize
 # import numpy as np
 import time
 import os
@@ -21,6 +21,8 @@ parser.add_argument("--printevery", type=int, default=10, help="Value of scalars
 parser.add_argument("--lr", '-l', type=float, default=0.01, help="Learning rate")
 parser.add_argument("--nthreads", '-t', type=int, default=2, help="Number of threads to use")
 parser.add_argument("--maxtokeep", type=int, default=1, help="Number of checkpoint to keep")
+parser.add_argument("--logfile", default="default.log", help="Path of the log file")
+parser.add_argument("--verbose", action="store_true", help="Set file to verbose")
 parser.add_argument("--saveevery", type=int, default=100, help="The value of the network will be saved every"
                                                                 "save-every loop")
 args = parser.parse_args()
@@ -40,8 +42,11 @@ print_every = args.printevery
 save_every = args.saveevery
 num_epochs = args.numepochs
 workdir = args.workdir
+is_verbose = args.verbose
 
 learning_rate = args.lr
+
+logpath = os.path.abspath(os.path.join(workdir, args.logfile))
 
 # logpath = os.path.abspath(os.path.join(workdir, "runs"))
 # with subprocess.Popen(['tensorboard', '--logdir', logpath]):
@@ -63,9 +68,9 @@ Uncomment to generate the vocab.dat file"""
 # Get the word to index correspondance for the embedding.
 word_to_index, index_to_word = dataloader_train.get_word_to_index(pad_index, bos_index,
                                                                   eos_index, unk_index)
-print(word_to_index)
-print("The index of 'the' is:", word_to_index["the"])
-print("The word of index 20 is:", index_to_word[20])
+log(word_to_index, logfile=logpath, is_verbose=is_verbose)
+log("The index of 'the' is:", word_to_index["the"], logfile=logpath, is_verbose=is_verbose)
+log("The word of index 20 is:", index_to_word[20], logfile=logpath, is_verbose=is_verbose)
 
 # lstm = LSTM(batch_size, embedding_size, vocab_size, hidden_size, max_size)
 
@@ -98,7 +103,7 @@ nthreads_inter = args.nthreads - args.nthreads // 2
 
 with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inter,
                                       intra_op_parallelism_threads=nthreads_intra)) as sess:
-    print('starting training')
+    log('starting training', logfile=logpath, is_verbose=is_verbose)
     sess.run(tf.global_variables_initializer())
     # Output directory for models and summaries
     timestamp = str(int(time.time()))
@@ -119,13 +124,13 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=num_checkpoints)
 
     merged_summary = tf.summary.merge_all()
-    print('summary')
+    log('summary', logfile=logpath, is_verbose=is_verbose)
 
     # Get a batch with the dataloader and transfrom it into tokens
     batches = dataloader_train.get_batches(batch_size, num_epochs=num_epochs)
     batches_eval = dataloader_eval.get_batches(batch_size, num_epochs=num_epochs)
     for num_batch, batch in enumerate(batches):
-        print("starting batch", num_batch)
+        log("starting batch", num_batch, logfile=logpath, is_verbose=is_verbose)
         batch = word_to_index_transform(word_to_index, batch)
         # Defining input and target sequences
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
@@ -146,11 +151,11 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
                                                       label: batch_target,
                                                       teacher_forcing: True})
 
-            print("saving scalar")
+            log("saving scalar", logfile=logpath, is_verbose=is_verbose)
             test_summary_writer.add_summary(summary_test, num_batch)
             train_summary_writer.add_summary(summary_train, num_batch)
 
             # Checkpoint directory (Tensorflow assumes this directory already exists so we need to create it)
         if num_batch % save_every == 0:
             path = saver.save(sess, checkpoint_prefix, global_step=num_batch)
-            print("Saved model checkpoint to {}\n".format(path))
+            log("Saved model checkpoint to {}\n".format(path), logfile=logpath, is_verbose=is_verbose)

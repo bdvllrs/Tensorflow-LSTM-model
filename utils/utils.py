@@ -2,6 +2,20 @@ import numpy as np
 import tensorflow as tf
 
 
+def log(*text, logfile=None, is_verbose=False):
+    """
+    Log text
+    :param text: text to log
+    :param logfile: file to print the log if given
+    :param is_verbose:
+    """
+    if is_verbose:
+        print(*text)
+    if logfile is not None:
+        with open(logfile, 'a') as log:
+            log.write(' '.join(text) + '\n')
+
+
 def word_to_index_transform(word_to_index, data):
     """
     Get a batch of sequences and transform the words into indices
@@ -73,7 +87,6 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
 
     state, _ = tf.scan(body, x_t, (default_state, k))
     output = state.h
-    print(state)
     # Add a dimension for being able to multiply with W
     final_output = tf.expand_dims(output, 3)
     final_output = tf.matmul(W, final_output)  # Premier
