@@ -20,6 +20,7 @@ parser.add_argument("--numepochs", type=int, default=100, help="Number of epochs
 parser.add_argument("--printevery", type=int, default=10, help="Value of scalars will be save every print-every loop")
 parser.add_argument("--lr", '-l', type=float, default=0.01, help="Learning rate")
 parser.add_argument("--nthreads", '-t', type=int, default=2, help="Number of threads to use")
+parser.add_argument("--maxtokeep", type=int, default=1, help="Number of checkpoint to keep")
 parser.add_argument("--saveevery", type=int, default=100, help="The value of the network will be saved every"
                                                                 "save-every loop")
 args = parser.parse_args()
@@ -34,7 +35,7 @@ pad_index = 0
 bos_index = 1
 eos_index = 2
 unk_index = 3
-num_checkpoints = 5
+num_checkpoints = args.maxtokeep
 print_every = args.printevery
 save_every = args.saveevery
 num_epochs = args.numepochs
@@ -111,6 +112,12 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
     test_summary_writer = tf.summary.FileWriter(test_summary_dir, sess.graph)
     test_summary_writer.add_graph(sess.graph)
 
+    checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints", timestamp))
+    checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+    saver = tf.train.Saver(tf.global_variables(), max_to_keep=num_checkpoints)
+
     merged_summary = tf.summary.merge_all()
     print('summary')
 
@@ -145,10 +152,5 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
 
             # Checkpoint directory (Tensorflow assumes this directory already exists so we need to create it)
         if num_batch % save_every == 0:
-            checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints", timestamp))
-            checkpoint_prefix = os.path.join(checkpoint_dir, "model")
-            if not os.path.exists(checkpoint_dir):
-                os.makedirs(checkpoint_dir)
-            saver = tf.train.Saver(tf.global_variables(), max_to_keep=num_checkpoints)
             path = saver.save(sess, checkpoint_prefix, global_step=num_batch)
             print("Saved model checkpoint to {}\n".format(path))
