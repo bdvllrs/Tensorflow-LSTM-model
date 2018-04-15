@@ -7,17 +7,25 @@ By `Benjamin DEVILLERS`, `Adrien BENAMIRA` and `Esteban LANTER`
 
 import tensorflow as tf
 from utils import DataLoader, word_to_index_transform, index_to_word_transform, lstm, optimize
-import numpy as np
+# import numpy as np
 import time
 import os
-import subprocess
+import argparse
+# import subprocess
 
-# logpath = os.path.abspath(os.path.join(os.path.curdir, "runs"))
-# with subprocess.Popen(['tensorboard', '--logdir', logpath]):
-#     """Some general settings to edit"""
+parser = argparse.ArgumentParser()
+parser.add_argument("--workdir", default=os.path.curdir, help="Specifies the path of the work directory")
+parser.add_argument("--vocsize", type=int, default=100, help="Size of the vocabulary")
+parser.add_argument("--numepochs", type=int, default=100, help="Number of epochs")
+parser.add_argument("--printevery", type=int, default=10, help="Value of scalars will be save every print-every loop")
+parser.add_argument("--lr", '-l', type=float, default=0.01, help="Learning rate")
+parser.add_argument("--nthreads", '-t', type=int, default=2, min=2, help="Number of threads to use")
+parser.add_argument("--saveevery", type=int, default=100, help="The value of the network will be saved every"
+                                                                "save-every loop")
+args = parser.parse_args()
 
 max_size = 30  # Max size of the sentences, including  the <bos> and <eos> symbol
-vocab_size = 100  # including symbols
+vocab_size = args.vocsize  # including symbols
 embedding_size = 100  # Size of the embedding
 hidden_size = 512
 batch_size = 64
@@ -27,15 +35,19 @@ bos_index = 1
 eos_index = 2
 unk_index = 3
 num_checkpoints = 5
-print_every = 10
-save_every = 100
-num_epochs = 100
+print_every = args.printevery
+save_every = args.saveevery
+num_epochs = args.numepochs
+workdir = args.workdir
 
-learning_rate = 0.01
+learning_rate = args.lr
+
+# logpath = os.path.abspath(os.path.join(workdir, "runs"))
+# with subprocess.Popen(['tensorboard', '--logdir', logpath]):
 
 """Loading datasets"""
-dataloader_train = DataLoader('dataset/sentences.train', vocab_size, max_size)
-dataloader_eval = DataLoader('dataset/sentences.eval', vocab_size, max_size)
+dataloader_train = DataLoader('dataset/sentences.train', vocab_size, max_size, workdir=workdir)
+dataloader_eval = DataLoader('dataset/sentences.eval', vocab_size, max_size, workdir=workdir)
 
 """Get the vocab and save it to vocab.dat.
 If method not called, the model tries to open vocab.dat
@@ -79,13 +91,17 @@ furthermore, we need to seperate the batch into the input batch and the target b
 We will do that by separating the `max_size - 1` first index of the sequences into the input sequences and
 assign the `max_size - 1` last tokens into the target sequences.
 """
+nthreads_intra = args.nthreads // 2
+nthreads_inter = args.nthreads - args.nthreads // 2
 
-with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=1, intra_op_parallelism_threads=1)) as sess:
+
+with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inter,
+                                      intra_op_parallelism_threads=nthreads_intra)) as sess:
     print('starting training')
     sess.run(tf.global_variables_initializer())
     # Output directory for models and summaries
     timestamp = str(int(time.time()))
-    out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs"))
+    out_dir = os.path.abspath(os.path.join(workdir, "runs"))
     # Train Summaries
     train_summary_dir = os.path.join(out_dir, "summaries", timestamp, "train")
     train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)

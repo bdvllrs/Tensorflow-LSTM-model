@@ -11,7 +11,7 @@ class DataLoader:
     Preprocessing appens in the `preprocess_data` method.
     """
 
-    def __init__(self, filename, vocab_size=None, max_size=30, transform=None):
+    def __init__(self, filename, vocab_size=None, max_size=30, transform=None, workdir=None):
         """
         :param filename: path of file.
         :param vocab_size: Size of the vocab we will use (if default, the vocab will be
@@ -21,7 +21,10 @@ class DataLoader:
         :param transform: some additional transformation(s) to apply to the dataset.
           This can be a callable or a list of collable.
         """
-        self.filename = path.abspath(path.join(getcwd(), filename))
+        if workdir is None:
+            workdir = getcwd()
+        self.workdir = workdir
+        self.filename = path.abspath(path.join(self.workdir, filename))
         self.dataset = None
         self.indices = None
         self.max_size = max_size
@@ -88,7 +91,7 @@ class DataLoader:
             return self.vocab
         if file is None:
             file = 'vocab.dat'
-        file = path.abspath(path.join(getcwd(), file))
+        file = path.abspath(path.join(self.workdir, file))
         with open(file, 'rb') as file:
             self.vocab = pickle.load(file)[:self.vocab_size-4]  # Removing the 3 tokens in the size
         return self.vocab
@@ -100,7 +103,7 @@ class DataLoader:
         :param savefile: to save the file in a file
         :return: vocab
         """
-        filepath = path.abspath(path.join(getcwd(), self.filename))
+        filepath = path.abspath(path.join(self.workdir, self.filename))
         vocab = {}
         with open(filepath, 'r') as file:
             line = file.readline()
