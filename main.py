@@ -19,7 +19,7 @@ parser.add_argument("--vocsize", type=int, default=100, help="Size of the vocabu
 parser.add_argument("--numepochs", type=int, default=100, help="Number of epochs")
 parser.add_argument("--printevery", type=int, default=10, help="Value of scalars will be save every print-every loop")
 parser.add_argument("--lr", '-l', type=float, default=0.01, help="Learning rate")
-parser.add_argument("--nthreads", '-t', type=int, default=2, min=2, help="Number of threads to use")
+parser.add_argument("--nthreads", '-t', type=int, default=2, help="Number of threads to use")
 parser.add_argument("--saveevery", type=int, default=100, help="The value of the network will be saved every"
                                                                 "save-every loop")
 args = parser.parse_args()
