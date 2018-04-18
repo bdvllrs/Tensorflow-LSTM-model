@@ -8,6 +8,8 @@ Create a `dataset` folder in the working directory. And add the files:
 * `sentences.continuation`
 in the `dataset` folder.
 
+Dowload and set a `wordembeddings.word2vec` file at the root folder to use pretrained embbedings.
+
 ## Parameters on the `main.py file`
 * `--workdir` (default, current directory) Specifies the path of the work directory
 * `--vocsize` (default, 20000) Size of the vocabulary
