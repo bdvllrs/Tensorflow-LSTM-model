@@ -23,9 +23,9 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
         W = tf.get_variable("W", shape=(hidden_size, vocab_size),
                             initializer=tf.contrib.layers.xavier_initializer())
 
-    default_state = tf.nn.rnn_cell.LSTMStateTuple(tf.zeros([None, hidden_size],
+    default_state = tf.nn.rnn_cell.LSTMStateTuple(tf.zeros([batch_size, hidden_size],
                                                            name="state1"),
-                                                  tf.zeros([None, hidden_size],
+                                                  tf.zeros([batch_size, hidden_size],
                                                            name="state2"))
 
     def body(init, vect):
