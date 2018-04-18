@@ -6,7 +6,8 @@ By `Benjamin DEVILLERS`, `Adrien BENAMIRA` and `Esteban LANTER`
 """
 
 import tensorflow as tf
-from utils import DataLoader, log, log_reset, word_to_index_transform, index_to_word_transform, lstm, optimize
+from utils import DataLoader, log, log_reset, word_to_index_transform
+from LSTM import lstm, optimize
 # import numpy as np
 import time
 import os
