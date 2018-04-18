@@ -12,6 +12,7 @@ from LSTM import lstm, optimize
 import time
 import os
 import argparse
+
 # import subprocess
 
 
@@ -26,7 +27,7 @@ parser.add_argument("--maxtokeep", type=int, default=1, help="Number of checkpoi
 parser.add_argument("--logfile", default="default.log", help="Path of the log file")
 parser.add_argument("--verbose", action="store_true", help="Set file to verbose")
 parser.add_argument("--saveevery", type=int, default=100, help="The value of the network will be saved every"
-                                                                "save-every loop")
+                                                               "save-every loop")
 args = parser.parse_args()
 
 max_size = 30  # Max size of the sentences, including  the <bos> and <eos> symbol
@@ -84,14 +85,14 @@ teacher_forcing = tf.placeholder(tf.bool, (), name="teacher_forcing")
 output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
                               teacher_forcing)
 
-
 with tf.Session() as sess:
     onehot = tf.argmax(softmax_output, 2)
 
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
     optimizer, loss = optimize(output, label, learning_rate)
-    # perplexity = tf.pow(2, loss)
+    perplexity = tf.exp(loss)
     tf.summary.scalar('loss', loss)
+    tf.summary.scalar('perplexity', perplexity)
 
 """Now let's execute the graph in the session.
 
@@ -108,12 +109,9 @@ nthreads_intra = args.nthreads // 2
 nthreads_inter = args.nthreads - args.nthreads // 2
 
 
-
-   
-
-def printVal(onehot_id,index_to_word):
+def printVal(onehot_id, index_to_word):
     for k in range(onehot_id.shape[0]):
-        out = [index_to_word.get(i) for i in onehot_id[k,:]]
+        out = [index_to_word.get(i) for i in onehot_id[k, :]]
         out = "".join(out)
         res = ' '.join(out.split())
         print(res)
@@ -149,15 +147,16 @@ with tf.Session() as sess:
     batches_eval = dataloader_eval.get_batches(batch_size, num_epochs=num_epochs)
     for num_batch, batch in enumerate(batches):
         print(num_batch)
-        
+
         log("starting batch", num_batch, logfile=logpath, is_verbose=is_verbose)
         batch = word_to_index_transform(word_to_index, batch)
         # Defining input and target sequences
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         # Run the session
-        _, logits, out_loss, onehot_id = sess.run([optimizer, softmax_output, loss, onehot], {x: batch_input,
-                                                                           label: batch_target,
-                                                                           teacher_forcing: True})
+        _, logits, out_loss, perplexity_computed, onehot_id = sess.run(
+            [optimizer, softmax_output, loss, perplexity, onehot], {x: batch_input,
+                                                                    label: batch_target,
+                                                                    teacher_forcing: True})
         print(onehot_id)
         print(out_loss)
         printVal(onehot_id, index_to_word)
@@ -182,9 +181,3 @@ with tf.Session() as sess:
         if num_batch % save_every == 0:
             path = saver.save(sess, checkpoint_prefix, global_step=num_batch)
             log("Saved model checkpoint to {}\n".format(path), logfile=logpath, is_verbose=is_verbose)
-            
-            
-            
-            
-         
-
