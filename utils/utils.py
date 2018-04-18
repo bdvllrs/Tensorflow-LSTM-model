@@ -66,8 +66,7 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
 
     # weight for the softmax
     with tf.variable_scope("softmax", reuse=tf.AUTO_REUSE):
-        W = tf.get_variable("W", shape=(max_size - 1, batch_size,
-                                        vocab_size, hidden_size),
+        W = tf.get_variable("W", shape=(hidden_size, vocab_size),
                             initializer=tf.contrib.layers.xavier_initializer())
 
     default_state = tf.nn.rnn_cell.LSTMStateTuple(tf.zeros([batch_size, hidden_size],
@@ -95,9 +94,10 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
     state, _ = tf.scan(body, x_t, (default_state, k))
     output = state.h
     # Add a dimension for being able to multiply with W
-    final_output = tf.expand_dims(output, 3)
-    final_output = tf.matmul(W, final_output)  # Premier
-    final_output = tf.squeeze(final_output, 3)
+    # final_output = tf.expand_dims(output, 3)
+    final_output = tf.reshape(output, [(max_size-1) * batch_size, -1])
+    final_output = tf.matmul(final_output, W)  # Premier
+    final_output = tf.reshape(final_output, [max_size-1, batch_size, -1])
     final_output = tf.transpose(final_output, [1, 0, 2])
     return final_output, tf.nn.softmax(final_output)
 

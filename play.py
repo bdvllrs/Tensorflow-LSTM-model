@@ -113,10 +113,11 @@ nthreads_inter = args.nthreads - args.nthreads // 2
 #problem still with line 117 - it should be uncommented to work in my tf version. But shouldn't be necessary as we are loading in pre-trained vars i believe.
 #also, replce folders and checkpoint names in line 119 accordingly.
 
-with tf.Session() as sess:
-    saver = tf.train.import_meta_graph("./runs/checkpoints/1523902757/model-100.meta")
+with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inter,
+                                      intra_op_parallelism_threads=nthreads_intra)) as sess:
+    saver = tf.train.import_meta_graph("./runs/checkpoints/1523960770/model-46500.meta")
     #sess.run(tf.global_variables_initializer())
-    saver.restore(sess, "./runs/checkpoints/1523902757/model-100")
+    saver.restore(sess, "./runs/checkpoints/1523960770/model-46500")
     print("Model restored.")
     # Get a batch with the dataloader and transfrom it into tokens
     batches = dataloader_train.get_batches(batch_size, num_epochs=num_epochs)

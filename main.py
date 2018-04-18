@@ -84,7 +84,7 @@ output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch
 
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
     optimizer, loss = optimize(output, label, learning_rate)
-    # perplexity = tf.pow(2, loss)
+    perplexity = tf.exp(loss)
     tf.summary.scalar('loss', loss)
 
 """Now let's execute the graph in the session.
@@ -136,7 +136,7 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
         # Defining input and target sequences
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         # Run the session
-        _, logits, out_loss = sess.run([optimizer, softmax_output, loss], {x: batch_input,
+        _, logits, out_loss, computed_perplexity = sess.run([optimizer, softmax_output, loss, perplexity], {x: batch_input,
                                                                            label: batch_target,
                                                                            teacher_forcing: True})
 
