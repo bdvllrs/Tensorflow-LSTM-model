@@ -6,26 +6,29 @@ By `Benjamin DEVILLERS`, `Adrien BENAMIRA` and `Esteban LANTER`
 """
 
 import tensorflow as tf
-from utils import DataLoader, log, log_reset, word_to_index_transform
+from utils import DataLoader, log, log_reset, word_to_index_transform, load_embedding
 from LSTM import lstm, optimize
 # import numpy as np
 import time
 import os
 import argparse
+
 # import subprocess
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--workdir", default=os.path.curdir, help="Specifies the path of the work directory")
 parser.add_argument("--vocsize", type=int, default=20000, help="Size of the vocabulary")
-parser.add_argument("--numepochs", type=int, default=100, help="Number of epochs")
-parser.add_argument("--printevery", type=int, default=10, help="Value of scalars will be save every print-every loop")
+parser.add_argument("--num-epochs", "--numepochs", type=int, default=100, help="Number of epochs")
+parser.add_argument("--print-every", "--printevery", type=int, default=10,
+                    help="Value of scalars will be save every print-every loop")
 parser.add_argument("--lr", '-l', type=float, default=0.01, help="Learning rate")
 parser.add_argument("--nthreads", '-t', type=int, default=2, help="Number of threads to use")
-parser.add_argument("--maxtokeep", type=int, default=1, help="Number of checkpoint to keep")
+parser.add_argument("--max-to-keep", "--maxtokeep", type=int, default=1, help="Number of checkpoint to keep")
 parser.add_argument("--logfile", default="default.log", help="Path of the log file")
 parser.add_argument("--verbose", action="store_true", help="Set file to verbose")
-parser.add_argument("--saveevery", type=int, default=100, help="The value of the network will be saved every"
-                                                                "save-every loop")
+parser.add_argument("--pretrained-embedding", "-p", action="store_true", help="Use pretrained embedding")
+parser.add_argument("--save-every", "--saveevery", type=int, default=100,
+                    help="The value of the network will be saved every save-every loop")
 args = parser.parse_args()
 
 max_size = 30  # Max size of the sentences, including  the <bos> and <eos> symbol
@@ -38,12 +41,13 @@ pad_index = 0
 bos_index = 1
 eos_index = 2
 unk_index = 3
-num_checkpoints = args.maxtokeep
-print_every = args.printevery
-save_every = args.saveevery
-num_epochs = args.numepochs
+num_checkpoints = args.max_to_keep
+print_every = args.print_every
+save_every = args.save_every
+num_epochs = args.num_epochs
 workdir = args.workdir
 is_verbose = args.verbose
+use_pretrained_model = args.pretrained_embedding
 
 learning_rate = args.lr
 
@@ -70,18 +74,17 @@ Uncomment to generate the vocab.dat file"""
 # Get the word to index correspondance for the embedding.
 word_to_index, index_to_word = dataloader_train.get_word_to_index(pad_index, bos_index,
                                                                   eos_index, unk_index)
+
 log(word_to_index, logfile=logpath, is_verbose=is_verbose)
 log("The index of 'the' is:", word_to_index["the"], logfile=logpath, is_verbose=is_verbose)
 log("The word of index 20 is:", index_to_word[20], logfile=logpath, is_verbose=is_verbose)
-
-# lstm = LSTM(batch_size, embedding_size, vocab_size, hidden_size, max_size)
 
 x = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="x")
 label = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="label")
 teacher_forcing = tf.placeholder(tf.bool, (), name="teacher_forcing")
 
-output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
-                              teacher_forcing)
+word_embeddings, output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
+                                               teacher_forcing)
 
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
     optimizer, loss = optimize(output, label, learning_rate)
@@ -102,7 +105,6 @@ assign the `max_size - 1` last tokens into the target sequences.
 """
 nthreads_intra = args.nthreads // 2
 nthreads_inter = args.nthreads - args.nthreads // 2
-
 
 with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inter,
                                       intra_op_parallelism_threads=nthreads_intra)) as sess:
@@ -129,6 +131,10 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
     merged_summary = tf.summary.merge_all()
     log('summary', logfile=logpath, is_verbose=is_verbose)
 
+    """Loading pretrained embedding"""
+    if use_pretrained_model:
+        load_embedding(sess, word_to_index, word_embeddings, './wordembeddings.word2vec', embedding_size, vocab_size)
+
     # Get a batch with the dataloader and transfrom it into tokens
     batches = dataloader_train.get_batches(batch_size, num_epochs=num_epochs)
     batches_eval = dataloader_eval.get_batches(batch_size, num_epochs=num_epochs)
@@ -138,9 +144,10 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
         # Defining input and target sequences
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         # Run the session
-        _, logits, out_loss, computed_perplexity = sess.run([optimizer, softmax_output, loss, perplexity], {x: batch_input,
-                                                                           label: batch_target,
-                                                                           teacher_forcing: True})
+        _, logits, out_loss, computed_perplexity = sess.run([optimizer, softmax_output, loss, perplexity],
+                                                            {x: batch_input,
+                                                             label: batch_target,
+                                                             teacher_forcing: True})
 
         if num_batch % print_every == 0:
             batch_eval = next(batches_eval)
