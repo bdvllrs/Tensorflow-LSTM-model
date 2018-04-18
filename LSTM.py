@@ -58,11 +58,12 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
 
 def optimize(output, label, learning_rate):
     training_vars = tf.trainable_variables()
-    cross_entropy = tf.reduce_mean(
-        tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label, logits=output))  # Deuxième...
+    
+    
+    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label, logits=output)
+    cross_entropy_batch = tf.reduce_mean(cross_entropy)  # Deuxième...
     grads, _ = tf.clip_by_global_norm(tf.gradients(cross_entropy, training_vars), 5)  # Max gradient of 5
-
     optimizer = tf.train.AdamOptimizer(learning_rate)
     optimizer.apply_gradients(zip(grads, training_vars))
 
-    return optimizer.minimize(cross_entropy), cross_entropy
+    return optimizer.minimize(cross_entropy), cross_entropy_batch, cross_entropy
