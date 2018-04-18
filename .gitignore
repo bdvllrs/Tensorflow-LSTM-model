@@ -4,3 +4,4 @@ runs/
 *cache*
 *.log
 *.txt
+*.word2vec

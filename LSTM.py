@@ -8,7 +8,7 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
     # and expect to receive [tag1, tag2, ..., sos]
     with tf.variable_scope("embedding", reuse=tf.AUTO_REUSE):
         word_embeddings = tf.get_variable("word_embeddings",
-                                          [vocab_size, embedding_size], dtype=tf.int32)
+                                          [vocab_size, embedding_size], dtype=tf.float32)
 
     inputs = tf.nn.embedding_lookup(word_embeddings, x)
     if label is not None:
@@ -53,12 +53,11 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
     final_output = tf.matmul(final_output, W)  # Premier
     final_output = tf.reshape(final_output, [max_size-1, batch_size, -1])
     final_output = tf.transpose(final_output, [1, 0, 2])
-    return final_output, tf.nn.softmax(final_output)
+    return word_embeddings, final_output, tf.nn.softmax(final_output)
 
 
 def optimize(output, label, learning_rate):
     training_vars = tf.trainable_variables()
-    
     
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label, logits=output)
     cross_entropy_batch = tf.reduce_mean(cross_entropy)  # Deuxième...
