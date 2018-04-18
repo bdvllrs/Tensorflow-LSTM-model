@@ -15,7 +15,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--workdir", default=os.path.curdir, help="Specifies the path of the work directory")
-parser.add_argument("--vocsize", type=int, default=100, help="Size of the vocabulary")
+parser.add_argument("--vocsize", type=int, default=20000, help="Size of the vocabulary")
 parser.add_argument("--numepochs", type=int, default=100, help="Number of epochs")
 parser.add_argument("--printevery", type=int, default=10, help="Value of scalars will be save every print-every loop")
 parser.add_argument("--lr", '-l', type=float, default=0.01, help="Learning rate")
@@ -86,6 +86,7 @@ with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
     optimizer, loss = optimize(output, label, learning_rate)
     perplexity = tf.exp(loss)
     tf.summary.scalar('loss', loss)
+    tf.summary.scalar('perplexity', perplexity)
 
 """Now let's execute the graph in the session.
 

@@ -2,4 +2,5 @@ dataset/
 .idea/
 runs/
 *cache*
-
+*.log
+*.txt
