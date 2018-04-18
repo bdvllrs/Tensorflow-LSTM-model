@@ -83,8 +83,7 @@ x = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="x")
 label = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="label")
 teacher_forcing = tf.placeholder(tf.bool, (), name="teacher_forcing")
 
-output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
-                              teacher_forcing)
+output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,teacher_forcing)
 
 with tf.Session() as sess:
     onehot = tf.argmax(softmax_output, 2)
@@ -159,10 +158,14 @@ with tf.Session() as sess:
                 batch_eval = word_to_index_transform(word_to_index, batch_eval)
                 batch_eval_input, batch_eval_target = batch_eval[:, :-1], batch_eval[:, 1:]
                 loss_out_eval,perplexity_out_eval,onehot_out_eval,cross_entropy_out_eval = sess.run([loss,perplexity,onehot,cross_entropy_out], {x: batch_eval_input,label: batch_eval_target,teacher_forcing: False})
+                printVal(onehot_out_eval, index_to_word)
                 perplexities=np.concatenate((perplexities,perplexity_out_eval))
             gen_in = np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-2)))],0)
+            #print('___________________')
+            #print(perplexities)
+            #print('___________________')
             for i in range(30):
-                onehot_out_gen = sess.run([onehot], {x: gen_in,label: gen_in,teacher_forcing: False})    
+                onehot_out_gen = sess.run(onehot, {x: gen_in,label: gen_in,teacher_forcing: False})    
                 printVal(onehot_out_gen, index_to_word)
                 gen_in = onehot_out_gen
             # Checkpoint directory (Tensorflow assumes this directory already exists so we need to create it)
