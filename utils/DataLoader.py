@@ -65,7 +65,7 @@ class DataLoader:
         # Remove sentences that are too long.
         # We use self.max_size -2 for <bos> and <eos>
         dataset = list(filter(lambda s: len(s) <= (self.max_size - 2),
-                                   dataset))
+                              dataset))
         # Set the <unk> words
         dataset = list(map(self.set_unk_token, dataset))
         # Pad the sentences and add <bos> and <eos>
@@ -93,7 +93,7 @@ class DataLoader:
             file = 'vocab.dat'
         file = path.abspath(path.join(self.workdir, file))
         with open(file, 'rb') as file:
-            self.vocab = pickle.load(file)[:self.vocab_size-4]  # Removing the 3 tokens in the size
+            self.vocab = pickle.load(file)[:self.vocab_size - 4]  # Removing the 3 tokens in the size
         return self.vocab
 
     def compute_vocab(self, vocab_size=20000, savefile=None):
@@ -121,7 +121,7 @@ class DataLoader:
         vocab_ordered = list(zip(*sorted(vocab.items(), key=lambda t: t[1],
                                          reverse=True)))
         self.vocab = vocab_ordered[0]  # Keep only the words
-        self.vocab = self.vocab[:vocab_size-4]  # Remove the <bos>, <unk> and <eos> tokens
+        self.vocab = self.vocab[:vocab_size - 4]  # Remove the <bos>, <unk> and <eos> tokens
         if savefile is not None:
             with open('vocab.dat', 'wb') as file:
                 pickle.dump(self.vocab, file)
@@ -137,6 +137,7 @@ class DataLoader:
         :rtype: tuple(dict, dict)
         :return: couple of word to index correspondance and index to word correspondance.
         """
+        print(pad_index)
         vocab = self.get_vocab()
         word_to_index = {
             "<pad>": pad_index,
