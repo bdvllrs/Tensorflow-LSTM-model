@@ -31,8 +31,8 @@ parser.add_argument("--saveevery", type=int, default=100, help="The value of the
                                                                "save-every loop")
 args = parser.parse_args()
 
-max_size = 8  # Max size of the sentences, including  the <bos> and <eos> symbol
-vocab_size = 100  # including symbols
+max_size = 30  # Max size of the sentences, including  the <bos> and <eos> symbol
+vocab_size = 20000  # including symbols
 embedding_size = 32  # Size of the embedding
 hidden_size = 32
 batch_size = 64
@@ -160,12 +160,13 @@ with tf.Session() as sess:
                 loss_out_eval,perplexity_out_eval,onehot_out_eval,cross_entropy_out_eval = sess.run([loss,perplexity,onehot,cross_entropy_out], {x: batch_eval_input,label: batch_eval_target,teacher_forcing: False})
                 printVal(onehot_out_eval, index_to_word)
                 perplexities=np.concatenate((perplexities,perplexity_out_eval))
-            gen_in = np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-2)))],0)
+            #gen_in = np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-2)))],0)
+            gen_in = list(dataloader_eval.get_batches(batch_size, num_epochs=1))[1]
             #print('___________________')
             #print(perplexities)
             #print('___________________')
             for i in range(30):
-                onehot_out_gen = sess.run(onehot, {x: gen_in,label: gen_in,teacher_forcing: False})    
+                onehot_out_gen, softmax_output_gen  = sess.run([onehot,softmax_output], {x: gen_in,label: gen_in,teacher_forcing: False})    
                 printVal(onehot_out_gen, index_to_word)
                 gen_in = onehot_out_gen
             # Checkpoint directory (Tensorflow assumes this directory already exists so we need to create it)
