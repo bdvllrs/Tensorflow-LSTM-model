@@ -144,7 +144,6 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
         # Defining input and target sequences
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         # Run the session
-        print(perplexity.shape)
         _, logits, out_loss, computed_perplexity = sess.run([optimizer, softmax_output, loss, perplexity],
                                                             {x: batch_input,
                                                              label: batch_target,
