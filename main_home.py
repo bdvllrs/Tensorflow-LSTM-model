@@ -114,6 +114,7 @@ nthreads_inter = args.nthreads - args.nthreads // 2
 def printVal(onehot_id, index_to_word):
     for k in range(onehot_id.shape[0]):
         out = [index_to_word.get(i) for i in onehot_id[k, :]]
+<<<<<<< HEAD
         print(out)
         
 def printVal2(inputhot,onehot_id, index_to_word,batch_size, rnd_id):
@@ -122,6 +123,11 @@ def printVal2(inputhot,onehot_id, index_to_word,batch_size, rnd_id):
     print(orig)
     print('_________________')
     print(out)
+=======
+        out = " ".join(out)
+        res = ' '.join(out.split())
+        print(res)
+>>>>>>> origin/master
 
 
 with tf.Session() as sess:
@@ -174,6 +180,7 @@ with tf.Session() as sess:
             log('\n'.join(map(str, perplexities)),logfile=logpath, is_verbose=is_verbose)
             #gen_in = np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-2)))],0)
             gen_in = list(dataloader_eval.get_batches(batch_size, num_epochs=1))[1]
+<<<<<<< HEAD
             gen_in = word_to_index_transform(word_to_index, gen_in)
             gen_in, discard = gen_in[:, :-1], gen_in[:, 1:]
             some_random_id = np.random.randint(0,gen_in.shape[0])
@@ -193,3 +200,10 @@ with tf.Session() as sess:
             log("Saved model checkpoint to {}\n".format(path), logfile=logpath, is_verbose=is_verbose)
 
 
+<<<<<<< HEAD
+=======
+
+#
+#for i in range(25):
+#    np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-1)))],0)
+>>>>>>> origin/master
