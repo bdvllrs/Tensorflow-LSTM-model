@@ -91,8 +91,8 @@ with tf.Session() as sess:
     onehot = tf.argmax(softmax_output, 2)
 
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
-    optimizer, loss = optimize(output, label, learning_rate)
-    perplexity = tf.exp(loss)
+    optimizer, loss, cross_entropy_out, weights = optimize(output, label, learning_rate)
+    perplexity = tf.exp(cross_entropy_out)
     tf.summary.scalar('loss', loss)
     tf.summary.scalar('perplexity', perplexity)
 
