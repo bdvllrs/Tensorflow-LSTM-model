@@ -59,6 +59,7 @@ use_pretrained_model = args.pretrained_embedding
 learning_rate = args.lr
 
 logpath = os.path.abspath(os.path.join(workdir, args.logfile))
+embeddingpath = os.path.abspath(os.path.join(workdir, './wordembeddings.word2vec'))
 log_reset(logpath)
 
 # logpath = os.path.abspath(os.path.join(workdir, "runs"))
@@ -140,7 +141,7 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
 
     """Loading pretrained embedding"""
     if use_pretrained_model:
-        load_embedding(sess, word_to_index, word_embeddings, './wordembeddings.word2vec', embedding_size, vocab_size)
+        load_embedding(sess, word_to_index, word_embeddings, embeddingpath, embedding_size, vocab_size)
 
     # Get a batch with the dataloader and transfrom it into tokens
     batches = dataloader_train.get_batches(batch_size, num_epochs=num_epochs)
