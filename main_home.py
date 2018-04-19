@@ -114,7 +114,7 @@ nthreads_inter = args.nthreads - args.nthreads // 2
 def printVal(onehot_id, index_to_word):
     for k in range(onehot_id.shape[0]):
         out = [index_to_word.get(i) for i in onehot_id[k, :]]
-        out = "".join(out)
+        out = " ".join(out)
         res = ' '.join(out.split())
         print(res)
 
@@ -168,6 +168,8 @@ with tf.Session() as sess:
                 perplexities=np.concatenate((perplexities,perplexity_out_eval))
             #gen_in = np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-2)))],0)
             gen_in = list(dataloader_eval.get_batches(batch_size, num_epochs=1))[1]
+            gen_in_tokens = word_to_index_transform(word_to_index, gen_in)
+            gen_in = gen_in_tokens[:, :-1]
             #print('___________________')
             #print(perplexities)
             #print('___________________')
@@ -182,6 +184,6 @@ with tf.Session() as sess:
 
 
 
-#            
+#
 #for i in range(25):
 #    np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-1)))],0)
