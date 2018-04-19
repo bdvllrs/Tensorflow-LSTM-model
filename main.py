@@ -18,7 +18,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--workdir", default=os.path.curdir, help="Specifies the path of the work directory")
 parser.add_argument("--vocsize", type=int, default=20000, help="Size of the vocabulary")
-parser.add_argument("--num-epochs", "--numepochs", type=int, default=100, help="Number of epochs")
+parser.add_argument("--num-epochs", "--numepochs", type=int, default=100000, help="Number of epochs")
 parser.add_argument("--print-every", "--printevery", type=int, default=10,
                     help="Value of scalars will be save every print-every loop")
 parser.add_argument("--lr", '-l', type=float, default=0.01, help="Learning rate")
@@ -157,7 +157,11 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
                                                              teacher_forcing: True})
 
         if num_batch % print_every == 0:
-            batch_eval = next(batches_eval)
+            try:
+                batch_eval = next(batches_eval)
+            except:
+                batches_eval = dataloader_eval.get_batches(batch_size, num_epochs=num_epochs)
+                batch_eval = next(batches_eval)
             batch_eval = word_to_index_transform(word_to_index, batch_eval)
             # Defining input and target sequences
             batch_eval_input, batch_eval_target = batch_eval[:, :-1], batch_eval[:, 1:]
