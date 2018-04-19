@@ -90,8 +90,7 @@ with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
     optimizer, loss, cross_entropy_out, weights = optimize(output, label, learning_rate)
     perplexity = tf.exp(cross_entropy_out)
     tf.summary.scalar('loss', loss)
-    tf.summary.scalar('perplexity', perplexity)
-
+    tf.summary.scalar('perplexity', tf.reduce_mean(perplexity))
 
 """Now let's execute the graph in the session.
 
@@ -145,6 +144,7 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
         # Defining input and target sequences
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         # Run the session
+        print(perplexity.shape)
         _, logits, out_loss, computed_perplexity = sess.run([optimizer, softmax_output, loss, perplexity],
                                                             {x: batch_input,
                                                              label: batch_target,
