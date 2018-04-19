@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--workdir", default=os.path.curdir, help="Specifies the path of the work directory")
 parser.add_argument("--vocsize", type=int, default=20000, help="Size of the vocabulary")
 parser.add_argument("--num-epochs", "--numepochs", type=int, default=100, help="Number of epochs")
-parser.add_argument("--print-every", "--printevery", type=int, default=10,
+parser.add_argument("--print-every", "--printevery", type=int, default=100,
                     help="Value of scalars will be save every print-every loop")
 parser.add_argument("--lr", '-l', type=float, default=0.01, help="Learning rate")
 parser.add_argument("--nthreads", '-t', type=int, default=2, help="Number of threads to use")
@@ -115,9 +115,14 @@ nthreads_inter = args.nthreads - args.nthreads // 2
 def printVal(onehot_id, index_to_word):
     for k in range(onehot_id.shape[0]):
         out = [index_to_word.get(i) for i in onehot_id[k, :]]
-        out = " ".join(out)
-        res = ' '.join(out.split())
-        print(res)
+        print(out)
+
+def printVal2(inputhot,onehot_id, index_to_word,batch_size, rnd_id):
+    orig = [index_to_word.get(i) for i in inputhot[rnd_id, :]]
+    out = [index_to_word.get(i) for i in onehot_id[rnd_id, :]]
+    print(orig)
+    print('_________________')
+    print(out)
 
 
 with tf.Session() as sess:
@@ -142,7 +147,7 @@ with tf.Session() as sess:
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=num_checkpoints)
 
     merged_summary = tf.summary.merge_all()
-    log('summary', logfile=logpath, is_verbose=is_verbose)
+    #log('summary', logfile=logpath, is_verbose=is_verbose)
 
     """Loading pretrained embedding"""
     if use_pretrained_model:
@@ -152,7 +157,7 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     batches = dataloader_train.get_batches(batch_size, num_epochs=num_epochs)
     for num_batch, batch in enumerate(batches):
-        log("starting batch", num_batch, logfile=logpath, is_verbose=is_verbose)
+        #log("starting batch", num_batch, logfile=logpath, is_verbose=is_verbose)
         batch = word_to_index_transform(word_to_index, batch)
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         _, loss_out = sess.run([optimizer, loss], {x: batch_input, label: batch_target, teacher_forcing: True})
@@ -161,30 +166,34 @@ with tf.Session() as sess:
         if num_batch % print_every == 0:
             batches_eval = dataloader_eval.get_batches(batch_size, num_epochs=1)
             perplexities = []
-            # for num_batch_eval, batch_eval in enumerate(batches_eval): batch_eval = word_to_index_transform(word_to_index, batch_eval)
-            #     batch_eval_input, batch_eval_target = batch_eval[:, :-1], batch_eval[:, 1:]
-            #     loss_out_eval,perplexity_out_eval,onehot_out_eval,cross_entropy_out_eval = sess.run([loss,perplexity,onehot,cross_entropy_out], {x: batch_eval_input,label: batch_eval_target,teacher_forcing: False})
-            #     printVal(onehot_out_eval, index_to_word)
-            #     perplexities=np.concatenate((perplexities,perplexity_out_eval))
-            # gen_in = np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-2)))],0)
+            #for num_batch_eval, batch_eval in enumerate(batches_eval):
+            #    batch_eval = word_to_index_transform(word_to_index, batch_eval)
+            #    batch_eval_input, batch_eval_target = batch_eval[:, :-1], batch_eval[:, 1:]
+            #    loss_out_eval,perplexity_out_eval,onehot_out_eval,cross_entropy_out_eval = sess.run([loss,perplexity,onehot,cross_entropy_out], {x: batch_eval_input,label: batch_eval_target,teacher_forcing: False})
+                #printVal(onehot_out_eval, index_to_word)
+            #    perplexities=np.concatenate((perplexities,perplexity_out_eval))
+            log('\n'.join(map(str, perplexities)),logfile=logpath, is_verbose=is_verbose)#gen_in = np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-2)))],0)
             gen_in = list(dataloader_eval.get_batches(batch_size, num_epochs=1))[1]
-            gen_in_tokens = word_to_index_transform(word_to_index, gen_in)
-            gen_in = gen_in_tokens[:, :-1]
-            # print('___________________')
-            # print(perplexities)
-            # print('___________________')
-            for i in range(5):
-                onehot_out_gen, softmax_output_gen, weights_computed = sess.run([onehot, softmax_output, weights],
-                                                                                {x: gen_in, label: gen_in,
-                                                                                 teacher_forcing: False})
-                print(weights_computed)
-                printVal(onehot_out_gen, index_to_word)
-                gen_in = onehot_out_gen
+            gen_in = word_to_index_transform(word_to_index, gen_in)
+            gen_in, discard = gen_in[:, :-1], gen_in[:, 1:]
+            some_random_id = np.random.randint(0,gen_in.shape[0])
+            for i in range(max_size-2):
+                onehot_out_gen  = sess.run(onehot, {x: gen_in,label: gen_in,teacher_forcing: False})
+                gen_in = gen_in
+                gen_in[i+1] = onehot_out_gen[0]
+            printVal2(gen_in,onehot_out_gen, index_to_word,batch_size,some_random_id)
+#            for i in range(30):
+#                onehot_out_gen  = sess.run(onehot, {x: gen_in,label: gen_in,teacher_forcing: False})
+#                printVal2(gen_in,onehot_out_gen, index_to_word,batch_size,some_random_id)
+#                print('=========')
+#                gen_in = onehot_out_gen
             # Checkpoint directory (Tensorflow assumes this directory already exists so we need to create it)
         if num_batch % save_every == 0:
             path = saver.save(sess, checkpoint_prefix, global_step=num_batch)
             log("Saved model checkpoint to {}\n".format(path), logfile=logpath, is_verbose=is_verbose)
 
+
+
 #
-# for i in range(25):
+#for i in range(25):
 #    np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-1)))],0)
