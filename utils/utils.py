@@ -48,6 +48,15 @@ def index_to_word_transform(index_to_word, data):
     return np.array(list(map(lambda sequence: list(map(transform_word, sequence)), data)))
 
 
+def print_batch(index_to_word, batch, ask_for_next=False):
+    sentences = index_to_word_transform(index_to_word, batch)
+    r = None
+    for k, sentence in enumerate(sentences):
+        print(" ".join(sentence))
+        if ask_for_next and r != 'q':
+            r = input("\nEnter for next, q to continue to the next batch\n")
+
+
 def load_embedding(session, vocab, emb, path, dim_embedding, vocab_size):
     """
       :param session: Tensorflow session object

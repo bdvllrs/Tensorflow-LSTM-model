@@ -27,6 +27,7 @@ parser.add_argument("--max-to-keep", "--maxtokeep", type=int, default=1, help="N
 parser.add_argument("--logfile", default="default.log", help="Path of the log file")
 parser.add_argument("--verbose", action="store_true", help="Set file to verbose")
 parser.add_argument("--pretrained-embedding", "-p", action="store_true", help="Use pretrained embedding")
+parser.add_argument("--down-project", "-d", action="store_true", help="Down project")
 parser.add_argument("--save-every", "--saveevery", type=int, default=100,
                     help="The value of the network will be saved every save-every loop")
 args = parser.parse_args()
@@ -35,6 +36,12 @@ max_size = 30  # Max size of the sentences, including  the <bos> and <eos> symbo
 vocab_size = args.vocsize  # including symbols
 embedding_size = 100  # Size of the embedding
 hidden_size = 512
+down_project = False
+
+if args.down_project:
+    hidden_size = 1024
+    down_project = 512
+
 batch_size = 64
 # Indixes for the <pad>, <bos>, <eos> and <unk> words
 pad_index = 0
@@ -84,7 +91,7 @@ label = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="label")
 teacher_forcing = tf.placeholder(tf.bool, (), name="teacher_forcing")
 
 word_embeddings, output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
-                                               teacher_forcing)
+                                               teacher_forcing, down_project)
 
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
     optimizer, loss, cross_entropy_out, weights = optimize(output, label, learning_rate)

@@ -34,8 +34,8 @@ args = parser.parse_args()
 
 max_size = 30  # Max size of the sentences, including  the <bos> and <eos> symbol
 vocab_size = 20000  # including symbols
-embedding_size = 32  # Size of the embedding
-hidden_size = 32
+embedding_size = 100  # Size of the embedding
+hidden_size = 100
 batch_size = 64
 # Indixes for the <pad>, <bos>, <eos> and <unk> words
 pad_index = 0
@@ -75,9 +75,9 @@ Uncomment to generate the vocab.dat file"""
 # Get the word to index correspondance for the embedding.
 word_to_index, index_to_word = dataloader_train.get_word_to_index(pad_index, bos_index,
                                                                   eos_index, unk_index)
-log(word_to_index, logfile=logpath, is_verbose=is_verbose)
-log("The index of 'the' is:", word_to_index["the"], logfile=logpath, is_verbose=is_verbose)
-log("The word of index 20 is:", index_to_word[20], logfile=logpath, is_verbose=is_verbose)
+# log(word_to_index, logfile=logpath, is_verbose=is_verbose)
+# log("The index of 'the' is:", word_to_index["the"], logfile=logpath, is_verbose=is_verbose)
+# log("The word of index 20 is:", index_to_word[20], logfile=logpath, is_verbose=is_verbose)
 
 # lstm = LSTM(batch_size, embedding_size, vocab_size, hidden_size, max_size)
 
@@ -87,9 +87,9 @@ teacher_forcing = tf.placeholder(tf.bool, (), name="teacher_forcing")
 
 word_embeddings, output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
                                                teacher_forcing)
-
-with tf.Session() as sess:
-    onehot = tf.argmax(softmax_output, 2)
+print(softmax_output.shape)
+onehot = tf.argmax(softmax_output, 2)
+print(softmax_output.name)
 
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
     optimizer, loss, cross_entropy_out, weights = optimize(output, label, learning_rate)
@@ -117,7 +117,8 @@ def printVal(onehot_id, index_to_word):
         out = [index_to_word.get(i) for i in onehot_id[k, :]]
         print(out)
 
-def printVal2(inputhot,onehot_id, index_to_word,batch_size, rnd_id):
+
+def printVal2(inputhot, onehot_id, index_to_word, batch_size, rnd_id):
     orig = [index_to_word.get(i) for i in inputhot[rnd_id, :]]
     out = [index_to_word.get(i) for i in onehot_id[rnd_id, :]]
     print(orig)
@@ -128,6 +129,9 @@ def printVal2(inputhot,onehot_id, index_to_word,batch_size, rnd_id):
 with tf.Session() as sess:
     print('starting')
     log('starting training', logfile=logpath, is_verbose=is_verbose)
+    # saver = tf.train.import_meta_graph('./runs/checkpoints/1524130908/model-200.meta')
+    # saver.restore(sess, tf.train.latest_checkpoint("./runs/checkpoints/1524130908/"))
+
     # Output directory for models and summaries
     timestamp = str(int(time.time()))
     out_dir = os.path.abspath(os.path.join(workdir, "runs"))
@@ -147,7 +151,7 @@ with tf.Session() as sess:
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=num_checkpoints)
 
     merged_summary = tf.summary.merge_all()
-    #log('summary', logfile=logpath, is_verbose=is_verbose)
+    # log('summary', logfile=logpath, is_verbose=is_verbose)
 
     """Loading pretrained embedding"""
     if use_pretrained_model:
@@ -157,7 +161,7 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     batches = dataloader_train.get_batches(batch_size, num_epochs=num_epochs)
     for num_batch, batch in enumerate(batches):
-        #log("starting batch", num_batch, logfile=logpath, is_verbose=is_verbose)
+        # log("starting batch", num_batch, logfile=logpath, is_verbose=is_verbose)
         batch = word_to_index_transform(word_to_index, batch)
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         _, loss_out = sess.run([optimizer, loss], {x: batch_input, label: batch_target, teacher_forcing: True})
@@ -166,34 +170,33 @@ with tf.Session() as sess:
         if num_batch % print_every == 0:
             batches_eval = dataloader_eval.get_batches(batch_size, num_epochs=1)
             perplexities = []
-            #for num_batch_eval, batch_eval in enumerate(batches_eval):
+            # for num_batch_eval, batch_eval in enumerate(batches_eval):
             #    batch_eval = word_to_index_transform(word_to_index, batch_eval)
             #    batch_eval_input, batch_eval_target = batch_eval[:, :-1], batch_eval[:, 1:]
             #    loss_out_eval,perplexity_out_eval,onehot_out_eval,cross_entropy_out_eval = sess.run([loss,perplexity,onehot,cross_entropy_out], {x: batch_eval_input,label: batch_eval_target,teacher_forcing: False})
-                #printVal(onehot_out_eval, index_to_word)
+            # printVal(onehot_out_eval, index_to_word)
             #    perplexities=np.concatenate((perplexities,perplexity_out_eval))
-            log('\n'.join(map(str, perplexities)),logfile=logpath, is_verbose=is_verbose)#gen_in = np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-2)))],0)
+            log('\n'.join(map(str, perplexities)), logfile=logpath,
+                is_verbose=is_verbose)  # gen_in = np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-2)))],0)
             gen_in = list(dataloader_eval.get_batches(batch_size, num_epochs=1))[1]
             gen_in = word_to_index_transform(word_to_index, gen_in)
             gen_in, discard = gen_in[:, :-1], gen_in[:, 1:]
-            some_random_id = np.random.randint(0,gen_in.shape[0])
-            for i in range(max_size-2):
-                onehot_out_gen  = sess.run(onehot, {x: gen_in,label: gen_in,teacher_forcing: False})
+            some_random_id = np.random.randint(0, gen_in.shape[0])
+            for i in range(max_size - 2):
+                onehot_out_gen = sess.run(onehot, {x: gen_in, label: gen_in, teacher_forcing: False})
                 gen_in = gen_in
-                gen_in[i+1] = onehot_out_gen[0]
-            printVal2(gen_in,onehot_out_gen, index_to_word,batch_size,some_random_id)
-#            for i in range(30):
-#                onehot_out_gen  = sess.run(onehot, {x: gen_in,label: gen_in,teacher_forcing: False})
-#                printVal2(gen_in,onehot_out_gen, index_to_word,batch_size,some_random_id)
-#                print('=========')
-#                gen_in = onehot_out_gen
-            # Checkpoint directory (Tensorflow assumes this directory already exists so we need to create it)
+                gen_in[i + 1] = onehot_out_gen[0]
+            printVal2(gen_in, onehot_out_gen, index_to_word, batch_size, some_random_id)
+        #            for i in range(30):
+        #                onehot_out_gen  = sess.run(onehot, {x: gen_in,label: gen_in,teacher_forcing: False})
+        #                printVal2(gen_in,onehot_out_gen, index_to_word,batch_size,some_random_id)
+        #                print('=========')
+        #                gen_in = onehot_out_gen
+        # Checkpoint directory (Tensorflow assumes this directory already exists so we need to create it)
         if num_batch % save_every == 0:
             path = saver.save(sess, checkpoint_prefix, global_step=num_batch)
             log("Saved model checkpoint to {}\n".format(path), logfile=logpath, is_verbose=is_verbose)
 
-
-
 #
-#for i in range(25):
+# for i in range(25):
 #    np.stack(batch_size*[np.concatenate(([1],np.repeat(0,max_size-1)))],0)

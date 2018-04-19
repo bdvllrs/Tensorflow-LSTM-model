@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size, teacher_forcing):
+def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size, teacher_forcing, down_project=False):
     rnn_cell = tf.nn.rnn_cell.BasicLSTMCell(hidden_size)
 
     # We give in the vector [bos, tag1, tag2, ..., last tag]
@@ -20,8 +20,14 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
 
     # weight for the softmax
     with tf.variable_scope("softmax", reuse=tf.AUTO_REUSE):
-        W = tf.get_variable("W", shape=(hidden_size, vocab_size),
-                            initializer=tf.contrib.layers.xavier_initializer())
+        if down_project:
+            W = tf.get_variable("W", shape=(down_project, vocab_size),
+                                initializer=tf.contrib.layers.xavier_initializer())
+            WP = tf.get_variable("WP", shape=(hidden_size, down_project),
+                                 initializer=tf.contrib.layers.xavier_initializer())
+        else:
+            W = tf.get_variable("W", shape=(hidden_size, vocab_size),
+                                initializer=tf.contrib.layers.xavier_initializer())
 
     default_state = tf.nn.rnn_cell.LSTMStateTuple(tf.zeros([batch_size, hidden_size],
                                                            name="state1"),
@@ -50,10 +56,12 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
     # Add a dimension for being able to multiply with W
     # final_output = tf.expand_dims(output, 3)
     final_output = tf.reshape(output, [(max_size - 1) * batch_size, -1])
+    if down_project:
+        final_output = tf.matmul(final_output, WP)
     final_output = tf.matmul(final_output, W)  # Premier
     final_output = tf.reshape(final_output, [max_size - 1, batch_size, -1])
     final_output = tf.transpose(final_output, [1, 0, 2])
-    return word_embeddings, final_output, tf.nn.softmax(final_output)
+    return word_embeddings, final_output, tf.nn.softmax(final_output, name="softmax_output")
 
 
 def optimize(output, label, learning_rate):

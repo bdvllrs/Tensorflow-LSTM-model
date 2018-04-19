@@ -22,6 +22,7 @@ Dowload and set a `wordembeddings.word2vec` file at the root folder to use pretr
 * `--verbose` Set file to verbose
 * `--save-every` (default, 100) The value of the network will be saved every
 * `--pretrained-embedding`, `-p` Use pretrained embedding
+* `--down-project`, `-d` Down project for experiment C
 
 ## Dependencies
 
