@@ -32,6 +32,9 @@ class DataLoader:
         self.vocab = None
         self.transform = transform
         self.tokenizer = lambda x: x.split(' ')
+        self.original_lines = None
+        self.lines = None
+        self.current_epoch = None
 
     def pad_sentence(self, words):
         """
@@ -166,7 +169,49 @@ class DataLoader:
         self.dataset = list(map(transform, self.dataset))
         return self
 
+    def get_lines(self):
+        """
+        Store all the lines
+        :return:
+        """
+        if self.original_lines is None:
+            self.original_lines = []
+        with open(self.filename, 'r') as dataset:
+            self.original_lines.append(dataset.tell())
+            line = dataset.readline()
+            while line:
+                self.original_lines.append(dataset.tell())
+                line = dataset.readline()
+        self.reinit_lines()
+
+    def reinit_lines(self):
+        self.lines = self.original_lines[:]
+        np.random.shuffle(self.lines)
+
+    def get_random_batch(self, batch_size):
+        if self.original_lines is None:
+            self.get_lines()
+        with open(self.filename, 'r') as dataset:
+            batch = []
+            epoch_changed = False
+            for i in range(batch_size):
+                if not len(self.lines):
+                    self.reinit_lines()
+                    epoch_changed = True
+                pos = self.lines.pop()
+                dataset.seek(pos)
+                batch.append(dataset.readline())
+        return batch, epoch_changed
+
     def get_batches(self, batch_size, num_epochs):
+        for epoch in range(num_epochs):
+            self.current_epoch = epoch
+            epoch_changed = False
+            while not epoch_changed:
+                batch, epoch_changed = self.get_random_batch(batch_size)
+                yield batch
+
+    def get_batches_old(self, batch_size, num_epochs):
         """
         Get a batch of random elements
         :param batch_size:

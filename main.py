@@ -163,6 +163,7 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
             except:
                 batches_eval = dataloader_eval.get_batches(batch_size, num_epochs=num_epochs)
                 batch_eval = next(batches_eval)
+
             batch_eval = word_to_index_transform(word_to_index, batch_eval)
             # Defining input and target sequences
             batch_eval_input, batch_eval_target = batch_eval[:, :-1], batch_eval[:, 1:]

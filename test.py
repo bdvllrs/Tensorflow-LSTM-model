@@ -66,17 +66,16 @@ Uncomment to generate the vocab.dat file"""
 """Let's do some test on the dataloader..."""
 
 word_to_index, index_to_word = dataloader_eval.get_word_to_index(pad_index, bos_index,
-                                                                  eos_index, unk_index)
+                                                                 eos_index, unk_index)
 
 nthreads_intra = args.nthreads // 2
 nthreads_inter = args.nthreads - args.nthreads // 2
 
-
 with tf.Session() as sess:
-    saver = tf.train.import_meta_graph('./runs/checkpoints/1524143752/model-0.meta')
-    saver.restore(sess, tf.train.latest_checkpoint("./runs/checkpoints/1524143752/"))
+    saver = tf.train.import_meta_graph('./run_leonhard/checkpoints/1524156448/model-185200.meta')
+    saver.restore(sess, tf.train.latest_checkpoint("./run_leonhard/checkpoints/1524156448/"))
 
-    sess.run(tf.global_variables_initializer())
+    # sess.run(tf.global_variables_initializer())
     # Output directory for models and summaries
 
     """Loading pretrained embedding"""
@@ -91,6 +90,7 @@ with tf.Session() as sess:
         # log("starting batch", num_batch, logfile=logpath, is_verbose=is_verbose)
         batch = word_to_index_transform(word_to_index, batch)
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
-        softmax = sess.run("Reshape_3:0", {"x:0": batch_input, "label:0": batch_target, "teacher_forcing:0": False})
+        softmax = sess.run("softmax_output:0",
+                           {"x:0": batch_input, "label:0": batch_target, "teacher_forcing:0": False})
         onehot = np.argmax(softmax, axis=2)
         print_batch(index_to_word, onehot, ask_for_next=True)
