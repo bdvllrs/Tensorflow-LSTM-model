@@ -64,11 +64,6 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
     return word_embeddings, final_output, tf.nn.softmax(final_output, name="softmax_output")
 
 
-def lstm2(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size, teacher_forcing, prev_state=None, down_project=False):
-    if prev_state is None:
-
-
-
 def optimize(output, label, learning_rate):
     training_vars = tf.trainable_variables()
     # Weights to get rid of the loss for <pad> token
