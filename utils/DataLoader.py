@@ -200,7 +200,10 @@ class DataLoader:
                     epoch_changed = True
                 pos = self.lines.pop()
                 dataset.seek(pos)
-                batch.append(dataset.readline())
+                line = dataset.readline()
+                line = line.replace('\n', '')
+                if len(line) <= self.max_size:
+                    batch.append(line)
         return batch, epoch_changed
 
     def get_batches(self, batch_size, num_epochs):
