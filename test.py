@@ -88,14 +88,15 @@ with tf.Session() as sess:
         onehot = np.argmax(softmax, axis=2)
         perplexities = np.exp(cross_entropy)
         # print(batch)
-        with open('perplexities', 'w') as file:
+        with open('perplexities.txt', 'a') as file:
             file.seek(last_pos)
             for perplexity in perplexities:
                 if k in dataloader_eval.wrong_lines:
                     file.write("0.0" + '\n')
                     k += 1
                 file.write(str(perplexity) + '\n')
-                last_pos = file.tell()
                 k += 1
+                last_pos = file.tell()
+                # print(last_pos)
     print(k)
         # print_batch(index_to_word, onehot, ask_for_next=True)
