@@ -96,7 +96,7 @@ word_embeddings, output, softmax_output = lstm(x, label, vocab_size, hidden_size
 print(output)
 
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
-    optimizer, loss, cross_entropy_out, cross_entropy_total, weights = optimize(output, label, learning_rate)
+    optimizer, loss, cross_entropy_out, weights = optimize(output, label, learning_rate)
     perplexity = tf.exp(loss)
     tf.summary.scalar('loss', loss)
     tf.summary.scalar('perplexity', tf.reduce_mean(perplexity))
