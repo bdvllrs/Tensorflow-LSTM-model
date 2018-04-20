@@ -38,12 +38,10 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
         state, k = init
         # Get the word of time step k
         # Teacher forcing
-        # is_teacher_forcing = not tf.less(teacher_forcing, tf.constant(1, dtype=tf.int8))
-        in_vect = tf.cond(tf.logical_and(teacher_forcing, k != 0), lambda: label_t[k - 1], lambda: vect)
-        # if not is_teacher_forcing or k == 0:
-        #     in_vect = vect  # put the last generated vector in
-        # else:
-        #     in_vect = label_t[k - 1]  # Put the last label in for faster training
+        # We can use the value teacher_forcing to force some values in the network
+        # This becomes handy if we want to continue some sentences
+        in_vect = tf.cond(tf.logical_and(tf.less(k, teacher_forcing), k != 0), lambda: label_t[k - 1], lambda: vect)
+
         in_vect = tf.cast(in_vect, tf.float32)
         _, state = rnn_cell(in_vect, state)
         return state, k + 1

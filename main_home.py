@@ -83,7 +83,7 @@ word_to_index, index_to_word = dataloader_train.get_word_to_index(pad_index, bos
 
 x = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="x")
 label = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="label")
-teacher_forcing = tf.placeholder(tf.bool, (), name="teacher_forcing")
+teacher_forcing = tf.placeholder(tf.int32, (), name="teacher_forcing")
 
 word_embeddings, output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
                                                teacher_forcing)
@@ -164,7 +164,7 @@ with tf.Session() as sess:
         # log("starting batch", num_batch, logfile=logpath, is_verbose=is_verbose)
         batch = word_to_index_transform(word_to_index, batch)
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
-        _, loss_out = sess.run([optimizer, loss], {x: batch_input, label: batch_target, teacher_forcing: True})
+        _, loss_out = sess.run([optimizer, loss], {x: batch_input, label: batch_target, teacher_forcing: max_size})
         print(num_batch)
         print(loss_out)
         if num_batch % print_every == 0:
@@ -183,7 +183,7 @@ with tf.Session() as sess:
             gen_in, discard = gen_in[:, :-1], gen_in[:, 1:]
             some_random_id = np.random.randint(0, gen_in.shape[0])
             for i in range(max_size - 2):
-                onehot_out_gen = sess.run(onehot, {x: gen_in, label: gen_in, teacher_forcing: False})
+                onehot_out_gen = sess.run(onehot, {x: gen_in, label: gen_in, teacher_forcing: 0})
                 gen_in = gen_in
                 gen_in[i + 1] = onehot_out_gen[0]
             printVal2(gen_in, onehot_out_gen, index_to_word, batch_size, some_random_id)

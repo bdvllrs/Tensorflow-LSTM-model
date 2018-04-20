@@ -89,7 +89,7 @@ log("The word of index 20 is:", index_to_word[20], logfile=logpath, is_verbose=i
 
 x = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="x")
 label = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="label")
-teacher_forcing = tf.placeholder(tf.bool, (), name="teacher_forcing")
+teacher_forcing = tf.placeholder(tf.int32, (), name="teacher_forcing")
 
 word_embeddings, output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
                                                teacher_forcing, down_project)
@@ -155,7 +155,7 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
         _, logits, out_loss, computed_perplexity = sess.run([optimizer, softmax_output, loss, perplexity],
                                                             {x: batch_input,
                                                              label: batch_target,
-                                                             teacher_forcing: True})
+                                                             teacher_forcing: max_size})
 
         if num_batch % print_every == 0:
             try:
@@ -169,10 +169,10 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
             batch_eval_input, batch_eval_target = batch_eval[:, :-1], batch_eval[:, 1:]
             summary_test = sess.run(merged_summary, {x: batch_eval_input,
                                                      label: batch_eval_target,
-                                                     teacher_forcing: False})
+                                                     teacher_forcing: 0})
             summary_train = sess.run(merged_summary, {x: batch_input,
                                                       label: batch_target,
-                                                      teacher_forcing: True})
+                                                      teacher_forcing: max_size})
 
             log("saving scalar", logfile=logpath, is_verbose=is_verbose)
             test_summary_writer.add_summary(summary_test, num_batch)
