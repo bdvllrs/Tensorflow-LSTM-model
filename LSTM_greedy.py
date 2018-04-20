@@ -81,7 +81,7 @@ def lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size
     final_output = tf.matmul(final_output, W)  # Premier
     final_output = tf.reshape(final_output, [max_size - 1, batch_size, -1])
     final_output = tf.transpose(final_output, [1, 0, 2])
-    return word_embeddings, final_output, tf.nn.softmax(final_output, name="softmax_output"), allState, lastState, W, WP
+    return word_embeddings, final_output, tf.nn.softmax(final_output, name="softmax_output"), allState, lastState, rnn_cell, W, WP
 
 
 def optimize(output, label, learning_rate):
@@ -102,14 +102,15 @@ def optimize(output, label, learning_rate):
 
 
 
-def getOneStep(down_project, hidden_size, W, WP=None):
+def getOneStep(down_project, hidden_size, rnn_cell, W, WP=None):
     #given the last step's state from the full sized rnn, we provide a new step and only unroll one step
     #1, batch_size, alphsize
     lastInput_tensor = tf.placeholder(tf.int32, [1, 1], name='lastInput')
     lastState_a_tensor = tf.placeholder(tf.float32, [1, hidden_size], name='lastState_a')
     lastState_b_tensor = tf.placeholder(tf.float32, [1, hidden_size], name='lastState_b')
     lastState = tf.nn.rnn_cell.LSTMStateTuple(lastState_a_tensor,lastState_b_tensor)
-    rnn_cell_pred = tf.nn.rnn_cell.BasicLSTMCell(hidden_size)
+    # rnn_cell_pred = tf.nn.rnn_cell.BasicLSTMCell(hidden_size)
+    rnn_cell_pred = rnn_cell
     lastInput_tensor = tf.cast(lastInput_tensor, tf.float32)
     _, lastState = rnn_cell_pred(lastInput_tensor,lastState)
     output = lastState.h
