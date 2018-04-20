@@ -7,7 +7,7 @@ By `Benjamin DEVILLERS`, `Adrien BENAMIRA` and `Esteban LANTER`
 
 import tensorflow as tf
 from utils import DataLoader, log, log_reset, word_to_index_transform, load_embedding
-from LSTM2 import lstm, optimize, getOneStep, getDefaultState
+from LSTM_greedy import lstm, optimize, getOneStep, getDefaultState
 # import numpy as np
 import time
 import os
@@ -90,7 +90,7 @@ x = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="x")
 label = tf.placeholder(tf.int32, (batch_size, max_size - 1), name="label")
 teacher_forcing = tf.placeholder(tf.bool, (), name="teacher_forcing")
 
-word_embeddings, output, softmax_output, allState, lastState = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
+word_embeddings, output, softmax_output, allState, lastState, W, WP = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
                                                teacher_forcing, down_project)
 
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
@@ -100,7 +100,7 @@ with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
     tf.summary.scalar('perplexity', tf.reduce_mean(perplexity))
     
 with tf.variable_scope("onestep", reuse=tf.AUTO_REUSE):
-    gen_input, gen_out, gen_pred, lastState_a_tensor, lastState_b_tensor = getOneStep(down_project, hidden_size)
+    gen_input, gen_out, gen_pred, lastState_a_tensor, lastState_b_tensor = getOneStep(down_project, hidden_size, W, WP)
 
 """Now let's execute the graph in the session.
 
