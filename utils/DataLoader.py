@@ -35,6 +35,7 @@ class DataLoader:
         self.original_lines = None
         self.lines = None
         self.current_epoch = None
+        self.wrong_lines = []
 
     def pad_sentence(self, words):
         """
@@ -182,6 +183,8 @@ class DataLoader:
             while line:
                 self.original_lines.append(dataset.tell())
                 line = dataset.readline()
+
+        print("number of lines", len(self.original_lines))
         self.reinit_lines(random)
 
     def reinit_lines(self, random=True):
@@ -203,8 +206,11 @@ class DataLoader:
                 dataset.seek(pos)
                 line = dataset.readline()
                 line = line.replace('\n', '')
-                if len(line) <= self.max_size:
+                if len(line.split(' ')) <= self.max_size - 2:
                     batch.append(line)
+                else:
+                    if pos+1 not in self.wrong_lines:
+                        self.wrong_lines.append(pos+1)
         return batch, epoch_changed
 
     def get_batches(self, batch_size, num_epochs, random=True):

@@ -9,7 +9,7 @@ By `Benjamin DEVILLERS`, `Adrien BENAMIRA` and `Esteban LANTER`
 """
 
 import tensorflow as tf
-from utils import DataLoader, log, log_reset, word_to_index_transform, load_embedding, print_batch
+from utils import DataLoader, log, log_reset, word_to_index_transform, index_to_word_transform, print_batch
 import os
 import argparse
 import numpy as np
@@ -44,7 +44,7 @@ logpath = os.path.abspath(os.path.join(workdir, args.logfile))
 log_reset(logpath)
 
 """Loading datasets"""
-dataloader_eval = DataLoader('dataset/sentences.eval', vocab_size, max_size, workdir=workdir)
+dataloader = DataLoader('dataset/sentences.continuation', vocab_size, max_size, workdir=workdir)
 
 """Get the vocab and save it to vocab.dat.
 If method not called, the model tries to open vocab.dat
@@ -56,7 +56,7 @@ Uncomment to generate the vocab.dat file"""
 
 """Let's do some test on the dataloader..."""
 
-word_to_index, index_to_word = dataloader_eval.get_word_to_index(pad_index, bos_index,
+word_to_index, index_to_word = dataloader.get_word_to_index(pad_index, bos_index,
                                                                  eos_index, unk_index)
 
 nthreads_intra = args.nthreads // 2
@@ -76,26 +76,30 @@ with tf.Session() as sess:
 
     # Get a batch with the dataloader and transfrom it into tokens
     # Get evaluation sequentialy
-    batches = dataloader_eval.get_batches(batch_size, num_epochs=1, random=False)
+    batches = dataloader.get_batches(1, num_epochs=1, random=False)
     last_pos = 0
-    print("start writing")
-    k = 1
-    for batch in batches:
-        batch = word_to_index_transform(word_to_index, batch)
+    for batch_item in batches:
+        # Fill in dimension
+        sentence = batch_item[0]
+        sentence_length = 0
+        for k, word in enumerate(sentence):
+            if word == '<pad>':
+                sentence_length = k+1
+                break
+        batch_item = word_to_index_transform(word_to_index, batch_item)
+        batch = np.zeros((batch_size, max_size))
+        batch[0, :] = batch_item[0]
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
-        softmax, cross_entropy = sess.run(["softmax_output:0", "optimizer/cross_entropy:0"],
-                           {"x:0": batch_input, "label:0": batch_target, "teacher_forcing:0": False})
+        softmax = sess.run("softmax_output",
+                                          {"x:0": batch_input, "label:0": batch_target, "teacher_forcing:0": sentence_length})
         onehot = np.argmax(softmax, axis=2)
-        perplexities = np.exp(cross_entropy)
-        # print(batch)
-        with open('perplexities', 'w') as file:
-            file.seek(last_pos)
-            for perplexity in perplexities:
-                if k in dataloader_eval.wrong_lines:
-                    file.write("0.0" + '\n')
-                    k += 1
-                file.write(str(perplexity) + '\n')
-                last_pos = file.tell()
-                k += 1
-    print(k)
         # print_batch(index_to_word, onehot, ask_for_next=True)
+        sentences = index_to_word_transform(index_to_word, batch)
+        sentence = sentences[0]
+        result = ['<bos>']
+        for word in sentence:
+            result.append(word)
+            if word == '<eos>':
+                break
+        print(" ".join(result))
+        wait = input('\nPress Enter\n')

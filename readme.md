@@ -10,7 +10,16 @@ in the `dataset` folder.
 
 Dowload and set a `wordembeddings.word2vec` file at the root folder to use pretrained embbedings.
 
-## Parameters on the `main.py file`
+`main.py` is the training model.
+* `main.py` for vanilla LSTM (experiment A)
+* `main.py -p` for pretrained embeddings (experiment B)
+* `main.py -dp` for pretrained embeddings and down project (experiment C)
+
+`test.py` to restore the model and use it
+
+`generation.py` to generate words from sentences.continuation
+
+## Parameters for the files
 * `--workdir` (default, current directory) Specifies the path of the work directory
 * `--vocsize` (default, 20000) Size of the vocabulary
 * `--num-epochs` (default, 100) Number of epochs
@@ -29,4 +38,5 @@ Dowload and set a `wordembeddings.word2vec` file at the root folder to use pretr
 * numpy
 * tensorflow
 * pickle
+* gensim
 

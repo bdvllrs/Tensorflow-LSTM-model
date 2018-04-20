@@ -93,6 +93,7 @@ teacher_forcing = tf.placeholder(tf.int32, (), name="teacher_forcing")
 
 word_embeddings, output, softmax_output = lstm(x, label, vocab_size, hidden_size, max_size, batch_size, embedding_size,
                                                teacher_forcing, down_project)
+print(output)
 
 with tf.variable_scope("optimizer", reuse=tf.AUTO_REUSE):
     optimizer, loss, cross_entropy_out, cross_entropy_total, weights = optimize(output, label, learning_rate)
