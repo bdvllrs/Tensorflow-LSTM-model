@@ -194,7 +194,7 @@ class DataLoader:
         with open(self.filename, 'r') as dataset:
             batch = []
             epoch_changed = False
-            for i in range(batch_size):
+            while len(batch) < 64:
                 if not len(self.lines):
                     self.reinit_lines()
                     epoch_changed = True
