@@ -172,7 +172,7 @@ class DataLoader:
         self.dataset = list(map(transform, self.dataset))
         return self
 
-    def get_lines(self, random=True):
+    def get_lines(self, random=True, filter_dataset=True):
         """
         Store all the lines
         :return:
@@ -183,10 +183,16 @@ class DataLoader:
             self.original_lines.append(dataset.tell())
             line = dataset.readline()
             while line:
-                self.original_lines.append(dataset.tell())
+                if not filter_dataset or len(line.split(' ')) <= self.max_size - 2:
+                    self.original_lines.append(dataset.tell())
+                else:
+                    wrong_line = dataset.tell()
+                    if wrong_line not in self.wrong_lines:
+                        self.wrong_lines.append(wrong_line)
                 line = dataset.readline()
 
-        print("number of lines", len(self.original_lines))
+        print("Importing", len(self.original_lines), "sentences")
+        print(len(self.wrong_lines), "lines have not been included because of their size")
         self.reinit_lines(random)
 
     def reinit_lines(self, random=True):
