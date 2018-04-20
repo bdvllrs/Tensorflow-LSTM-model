@@ -157,7 +157,6 @@ with tf.Session(config=tf.ConfigProto(inter_op_parallelism_threads=nthreads_inte
                                                             {x: batch_input,
                                                              label: batch_target,
                                                              teacher_forcing: max_size})
-
         if num_batch % print_every == 0:
             try:
                 batch_eval = next(batches_eval)

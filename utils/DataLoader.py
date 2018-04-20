@@ -55,7 +55,7 @@ class DataLoader:
         vocab = self.get_vocab()
         return list(map(lambda word: word if word in vocab else '<unk>', words))
 
-    def preprocess_dataset(self, batch):
+    def preprocess_dataset(self, batch, filter_dataset=True):
         """
         Preprocess the dataset.
 
@@ -68,8 +68,10 @@ class DataLoader:
         dataset = list(map(self.tokenizer, batch))
         # Remove sentences that are too long.
         # We use self.max_size -2 for <bos> and <eos>
-        dataset = list(filter(lambda s: len(s) <= (self.max_size - 2),
-                              dataset))
+        if filter_dataset:
+            dataset = list(filter(lambda s: len(s) <= (self.max_size - 2), dataset))
+        else:
+            dataset = list(map(lambda s: s[:self.max_size - 2], dataset))
         # Set the <unk> words
         dataset = list(map(self.set_unk_token, dataset))
         # Pad the sentences and add <bos> and <eos>
@@ -192,7 +194,7 @@ class DataLoader:
         if random:
             np.random.shuffle(self.lines)
 
-    def get_batch(self, batch_size, random=True):
+    def get_batch(self, batch_size, random=True, filter_dataset=True):
         if self.original_lines is None:
             self.get_lines(random)
         with open(self.filename, 'r') as dataset:
@@ -202,24 +204,26 @@ class DataLoader:
                 if not len(self.lines):
                     self.reinit_lines(random)
                     epoch_changed = True
-                pos = self.lines.pop()
+                pos = self.lines.pop(0)
                 dataset.seek(pos)
                 line = dataset.readline()
-                line = line.replace('\n', '')
-                if len(line.split(' ')) <= self.max_size - 2:
+                if not filter_dataset or len(line.split(' ')) <= self.max_size - 2:
+                    line = line.replace('\n', '')
+                    line = line.replace('\t', '')
                     batch.append(line)
-                else:
-                    if pos+1 not in self.wrong_lines:
-                        self.wrong_lines.append(pos+1)
+                # else:
+                #     wrong_line = self.original_lines.index(pos)+1
+                #     if wrong_line not in self.wrong_lines:
+                #         self.wrong_lines.append(wrong_line)
         return batch, epoch_changed
 
-    def get_batches(self, batch_size, num_epochs, random=True):
+    def get_batches(self, batch_size, num_epochs, random=True, filter_dataset=True):
         for epoch in range(num_epochs):
             self.current_epoch = epoch
             epoch_changed = False
             while not epoch_changed:
-                batch, epoch_changed = self.get_batch(batch_size, random)
-                yield self.preprocess_dataset(batch)
+                batch, epoch_changed = self.get_batch(batch_size, random, filter_dataset)
+                yield self.preprocess_dataset(batch, filter_dataset)
 
     def get_batches_old(self, batch_size, num_epochs):
         """

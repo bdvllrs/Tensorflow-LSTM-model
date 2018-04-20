@@ -28,6 +28,7 @@ args = parser.parse_args()
 
 # Some parameters
 max_size = 30  # Max size of the sentences, including  the <bos> and <eos> symbol
+max_size_sentence = 20
 vocab_size = args.vocsize  # including symbols
 embedding_size = 100  # Size of the embedding
 hidden_size = 100
@@ -57,15 +58,17 @@ Uncomment to generate the vocab.dat file"""
 """Let's do some test on the dataloader..."""
 
 word_to_index, index_to_word = dataloader.get_word_to_index(pad_index, bos_index,
-                                                                 eos_index, unk_index)
+                                                            eos_index, unk_index)
 
 nthreads_intra = args.nthreads // 2
 nthreads_inter = args.nthreads - args.nthreads // 2
 
 with tf.Session() as sess:
     # Restore the model
-    saver = tf.train.import_meta_graph('./run_leonhard/checkpoints/1524221671/model-104100.meta')
-    saver.restore(sess, tf.train.latest_checkpoint("./run_leonhard/checkpoints/1524221671/"))
+    # saver = tf.train.import_meta_graph('./run_leonhard/checkpoints/1524242137/model-88500.meta')
+    # saver.restore(sess, tf.train.latest_checkpoint("./run_leonhard/checkpoints/1524242137/"))
+    saver = tf.train.import_meta_graph('./run_leonhard/checkpoints/1524245999/model-54400.meta')
+    saver.restore(sess, tf.train.latest_checkpoint("./run_leonhard/checkpoints/1524245999/"))
 
     # Output directory for models and summaries
 
@@ -78,28 +81,43 @@ with tf.Session() as sess:
     # Get evaluation sequentialy
     batches = dataloader.get_batches(1, num_epochs=1, random=False)
     last_pos = 0
+    with open('generation.txt', 'w') as file:
+        file.write('')
     for batch_item in batches:
         # Fill in dimension
-        sentence = batch_item[0]
+        sentence_to_continue = batch_item[0]
         sentence_length = 0
-        for k, word in enumerate(sentence):
+        for k, word in enumerate(sentence_to_continue):
             if word == '<pad>':
-                sentence_length = k+1
+                sentence_length = k + 1
                 break
+        # print(sentence_to_continue)
+        # print(sentence_length)
         batch_item = word_to_index_transform(word_to_index, batch_item)
         batch = np.zeros((batch_size, max_size))
         batch[0, :] = batch_item[0]
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
-        softmax = sess.run("softmax_output",
-                                          {"x:0": batch_input, "label:0": batch_target, "teacher_forcing:0": sentence_length})
+        softmax = sess.run("softmax_output:0",
+                           {"x:0": batch_input, "label:0": batch_target, "teacher_forcing:0": sentence_length-2})
         onehot = np.argmax(softmax, axis=2)
         # print_batch(index_to_word, onehot, ask_for_next=True)
-        sentences = index_to_word_transform(index_to_word, batch)
+        sentences = index_to_word_transform(index_to_word, onehot)
         sentence = sentences[0]
-        result = ['<bos>']
-        for word in sentence:
-            result.append(word)
-            if word == '<eos>':
-                break
-        print(" ".join(result))
-        wait = input('\nPress Enter\n')
+        result = []
+        for k, word in enumerate(sentence):
+            if k > 0:
+                if k < sentence_length-2:
+                    word = sentence_to_continue[k]
+                if k >= max_size_sentence-2 and word != '<eos>':
+                    word = '<eos>'
+                result.append(word)
+                if word == '<eos>' or k >= max_size_sentence-1:
+                    break
+        original = result
+        result = " ".join(result)
+        with open('generation.txt', 'a') as file:
+            file.seek(last_pos)
+            file.write(result + "\n")
+            last_pos = file.tell()
+        # print(original)
+        # wait = input('\nPress Enter\n')

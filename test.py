@@ -64,38 +64,35 @@ nthreads_inter = args.nthreads - args.nthreads // 2
 
 with tf.Session() as sess:
     # Restore the model
-    saver = tf.train.import_meta_graph('./run_leonhard/checkpoints/1524221671/model-104100.meta')
-    saver.restore(sess, tf.train.latest_checkpoint("./run_leonhard/checkpoints/1524221671/"))
+    saver = tf.train.import_meta_graph('./run_leonhard/checkpoints/1524242137/model-88500.meta')
+    saver.restore(sess, tf.train.latest_checkpoint("./run_leonhard/checkpoints/1524242137/"))
 
     # Output directory for models and summaries
 
-    # """Loading pretrained embedding"""
-    # if use_pretrained_model:
-    #     load_embedding(sess, word_to_index, 'embedding/word_embeddings:0', './wordembeddings.word2vec', embedding_size,
-    #                    vocab_size)
-
     # Get a batch with the dataloader and transfrom it into tokens
     # Get evaluation sequentialy
-    batches = dataloader_eval.get_batches(batch_size, num_epochs=1, random=False)
+    batches = dataloader_eval.get_batches(batch_size, num_epochs=1, random=False, filter_dataset=False)
     last_pos = 0
     print("start writing")
     k = 1
-    for batch in batches:
-        batch = word_to_index_transform(word_to_index, batch)
+    nlines = 1
+    # Reset file
+    with open('perplexities.txt', 'w') as file:
+        file.write('')
+
+    for batch_item in batches:
+        batch = word_to_index_transform(word_to_index, batch_item)
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
         softmax, cross_entropy = sess.run(["softmax_output:0", "optimizer/cross_entropy:0"],
-                           {"x:0": batch_input, "label:0": batch_target, "teacher_forcing:0": False})
+                                          {"x:0": batch_input, "label:0": batch_target, "teacher_forcing:0": False})
         onehot = np.argmax(softmax, axis=2)
-        k += 64
-        perplexities = np.exp(cross_entropy)
+        perplexities = np.exp(cross_entropy, dtype=np.float64)
+        nlines += 64
         # print(batch)
         with open('perplexities.txt', 'a') as file:
             file.seek(last_pos)
-            for perplexity in perplexities:
-                if k in dataloader_eval.wrong_lines:
-                    file.write("0.0" + '\n')
+            for i, perplexity in enumerate(perplexities):
                 file.write(str(perplexity) + '\n')
                 last_pos = file.tell()
-                # print(last_pos)
+                k += 1
     print(k + len(dataloader_eval.wrong_lines))
-        # print_batch(index_to_word, onehot, ask_for_next=True)
