@@ -209,7 +209,7 @@ class DataLoader:
             epoch_changed = False
             while not epoch_changed:
                 batch, epoch_changed = self.get_random_batch(batch_size)
-                yield batch
+                yield self.preprocess_dataset(batch)
 
     def get_batches_old(self, batch_size, num_epochs):
         """
