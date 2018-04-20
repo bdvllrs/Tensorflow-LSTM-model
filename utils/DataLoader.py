@@ -169,7 +169,7 @@ class DataLoader:
         self.dataset = list(map(transform, self.dataset))
         return self
 
-    def get_lines(self):
+    def get_lines(self, random=True):
         """
         Store all the lines
         :return:
@@ -182,21 +182,22 @@ class DataLoader:
             while line:
                 self.original_lines.append(dataset.tell())
                 line = dataset.readline()
-        self.reinit_lines()
+        self.reinit_lines(random)
 
-    def reinit_lines(self):
+    def reinit_lines(self, random=True):
         self.lines = self.original_lines[:]
-        np.random.shuffle(self.lines)
+        if random:
+            np.random.shuffle(self.lines)
 
-    def get_random_batch(self, batch_size):
+    def get_batch(self, batch_size, random=True):
         if self.original_lines is None:
-            self.get_lines()
+            self.get_lines(random)
         with open(self.filename, 'r') as dataset:
             batch = []
             epoch_changed = False
-            while len(batch) < 64:
+            while len(batch) < batch_size:
                 if not len(self.lines):
-                    self.reinit_lines()
+                    self.reinit_lines(random)
                     epoch_changed = True
                 pos = self.lines.pop()
                 dataset.seek(pos)
@@ -206,12 +207,12 @@ class DataLoader:
                     batch.append(line)
         return batch, epoch_changed
 
-    def get_batches(self, batch_size, num_epochs):
+    def get_batches(self, batch_size, num_epochs, random=True):
         for epoch in range(num_epochs):
             self.current_epoch = epoch
             epoch_changed = False
             while not epoch_changed:
-                batch, epoch_changed = self.get_random_batch(batch_size)
+                batch, epoch_changed = self.get_batch(batch_size, random)
                 yield self.preprocess_dataset(batch)
 
     def get_batches_old(self, batch_size, num_epochs):
@@ -224,7 +225,7 @@ class DataLoader:
             epoch = 0
             while epoch < num_epochs:
                 batch = []
-                while len(batch) < 64:
+                while len(batch) < batch_size:
                     line = dataset.readline()
                     if not line:  # If no more line, we go back to the beginning
                         dataset.seek(0)

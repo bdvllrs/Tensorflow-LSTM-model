@@ -2,6 +2,9 @@
 """
 Project for ETH NLU course.
 
+Restore the graph
+Calculates the perplexity on the training set
+
 By `Benjamin DEVILLERS`, `Adrien BENAMIRA` and `Esteban LANTER`
 """
 
@@ -84,13 +87,14 @@ with tf.Session() as sess:
                        vocab_size)
 
     # Get a batch with the dataloader and transfrom it into tokens
-    batches = dataloader_eval.get_batches(batch_size, num_epochs=num_epochs)
+    batches = dataloader_eval.get_batches(batch_size, num_epochs=num_epochs, random=False)
     for num_batch in range(10):
         batch = next(batches)
         # log("starting batch", num_batch, logfile=logpath, is_verbose=is_verbose)
         batch = word_to_index_transform(word_to_index, batch)
         batch_input, batch_target = batch[:, :-1], batch[:, 1:]
-        softmax = sess.run("softmax_output:0",
+        softmax, cross_entropy = sess.run(["softmax_output:0", "optimizer/cross_entropy:0"],
                            {"x:0": batch_input, "label:0": batch_target, "teacher_forcing:0": False})
         onehot = np.argmax(softmax, axis=2)
+
         print_batch(index_to_word, onehot, ask_for_next=True)

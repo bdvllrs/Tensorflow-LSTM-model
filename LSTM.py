@@ -67,9 +67,9 @@ def optimize(output, label, learning_rate):
     # Weights to get rid of the loss for <pad> token
     # We are assuming here that the token is 0...
     weights = tf.cast(tf.greater(label, 0), tf.float32, name="weights")
-    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label, logits=output)
-    cross_entropy_batch = tf.reduce_sum(weights * cross_entropy, axis=1) / tf.reduce_sum(weights, axis=1)  # Deuxième...
-    grads, _ = tf.clip_by_global_norm(tf.gradients(cross_entropy, training_vars), 5)  # Max gradient of 5
+    cross_entropy_total = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label, logits=output)
+    cross_entropy_batch = tf.reduce_sum(weights * cross_entropy_total, axis=1) / tf.reduce_sum(weights, axis=1)  # Deuxième...
+    grads, _ = tf.clip_by_global_norm(tf.gradients(cross_entropy_total, training_vars), 5)  # Max gradient of 5
     optimizer = tf.train.AdamOptimizer(learning_rate)
     optimizer.apply_gradients(zip(grads, training_vars))
     opt = optimizer.minimize(cross_entropy_batch, name="optimizer")
